@@ -41,26 +41,22 @@ wrfdirs=c("/srv/ccrc/data36/z3478332/WRF/output/ERAI_R1_nudging_default_2007/out
           "/srv/ccrc/data37/z3478332/WRF/output/ERAI_R3_nudging_default_2007_BRAN/out/",
           "/srv/ccrc/data37/z3478332/WRF/output/ERAI_R1_nudging_default_2007_BRAN_noeac/out/",
           "/srv/ccrc/data37/z3478332/WRF/output/ERAI_R2_nudging_default_2007_BRAN_noeac/out/",
-          "/srv/ccrc/data37/z3478332/WRF/output/ERAI_R3_nudging_default_2007_BRAN_noeac/out/",
-          "/srv/ccrc/data36/z3478332/WRF/output/ERAI_R1_nudging_default_2007_BRAN_2eac/out/",
-          "/srv/ccrc/data36/z3478332/WRF/output/ERAI_R2_nudging_default_2007_BRAN_2eac/out/",
-          "/srv/ccrc/data36/z3478332/WRF/output/ERAI_R3_nudging_default_2007_BRAN_2eac/out/")
-dom="d01"
+          "/srv/ccrc/data37/z3478332/WRF/output/ERAI_R3_nudging_default_2007_BRAN_noeac/out/")
+dom="d02"
 cat="rad2_p100"
 
 wnames=c("R1","R2","R3",
          "R1_notopo","R2_notopo","R3_notopo",
          "R1_BRAN","R2_BRAN","R3_BRAN",
-         "R1_BRAN_noeac","R2_BRAN_noeac","R3_BRAN_noeac",
-         "R1_BRAN_2eac","R2_BRAN_2eac","R3_BRAN_2eac")
+         "R1_BRAN_noeac","R2_BRAN_noeac","R3_BRAN_noeac")
 
 fixes_GV<-events_GV<-list()
 dates=seq.POSIXt(from=as.POSIXct("2007010100",format="%Y%m%d%H",tz="GMT"),
                  to=as.POSIXct("2008123118",format="%Y%m%d%H",tz="GMT"),
                  by="6 hours")
 
-dom="d01"
-for(cat in c("rad5_p100","rad5_p240","rad2_p100","rad2_p240","rad2_p100_cv0.5"))
+dom="d02"
+#for(cat in c("rad5_p100","rad5_p240","rad2_p100","rad2_p240","rad2_p100_cv0.5"))
 for(w in 1:length(wnames))
 {
   tmp=read.csv(paste(wrfdirs[w],"GV_6hrly_timeseries.txt",sep=""),header=F)
@@ -72,14 +68,14 @@ for(w in 1:length(wnames))
   dayGV=aggregate(GV,by=list(day = cut(dates, "days", right = TRUE)),max)
   GVthresh=quantile(dayGV[,2],0.9,na.rm=T)
 
-  wrf=read.csv(paste("ECLfixes_",dom,"_0708_",wnames[w],"_",cat,"_typing.csv",sep=""),
+  wrf=read.csv(paste("ECLfixes_",dom,"_0708_",wnames[w],"_",cat,"_typing_impactsC.csv",sep=""),
                stringsAsFactors = F)
   wrf=wrf[,-1]
   wrf$Date2=as.POSIXct(paste(as.character(wrf$Date),substr(wrf$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
   I=match(wrf$Date2,dates)
   wrf$GV=GV[I]
   
-  wrf_E=read.csv(paste("ECLevents_",dom,"_0708_",wnames[w],"_",cat,"_typing.csv",sep=""),
+  wrf_E=read.csv(paste("ECLevents_",dom,"_0708_",wnames[w],"_",cat,"_typing_impactsC.csv",sep=""),
                  stringsAsFactors = F)
   wrf_E=wrf_E[,-1]
   wrf_E$GV=NaN
@@ -92,6 +88,6 @@ for(w in 1:length(wnames))
   
   wrf_E$GVthresh=as.numeric(wrf_E$GV>=GVthresh)
   
-  write.csv(wrf,paste("ECLfixes_",dom,"_0708_",wnames[w],"_",cat,"_typing_GV.csv",sep=""))
-  write.csv(wrf_E,paste("ECLevents_",dom,"_0708_",wnames[w],"_",cat,"_typing_GV.csv",sep=""))
+  write.csv(wrf,paste("ECLfixes_",dom,"_0708_",wnames[w],"_",cat,"_typing_impactsC_GV.csv",sep=""))
+  write.csv(wrf_E,paste("ECLevents_",dom,"_0708_",wnames[w],"_",cat,"_typing_impactsC_GV.csv",sep=""))
 }

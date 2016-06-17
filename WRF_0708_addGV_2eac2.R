@@ -60,10 +60,10 @@ dates=seq.POSIXt(from=as.POSIXct("2007010100",format="%Y%m%d%H",tz="GMT"),
                  by="6 hours")
 
 dom="d02"
-for(cat in c("rad5_p100","rad5_p240","rad2_p100","rad2_p240","rad2_p100_cv0.5"))
+#for(cat in c("rad5_p100","rad5_p240","rad2_p100","rad2_p240","rad2_p100_cv0.5"))
 for(w in 13:length(wnames))
 {
-  tmp=read.csv(paste(wrfdirs[w],"GV_6hrly_timeseries.txt",sep=""),header=F)
+  tmp=read.csv(paste(wrfdirs[w],"Analysis/GV_6hrly_timeseries.txt",sep=""),header=F)
   GV=rep(NaN,length(tmp[,1]))
   for(i in 5:(length(GV)-4)) GV[i]=mean(tmp[(i-4):(i+4),1])
   
@@ -72,14 +72,14 @@ for(w in 13:length(wnames))
   dayGV=aggregate(GV,by=list(day = cut(dates, "days", right = TRUE)),max)
   GVthresh=quantile(dayGV[,2],0.9,na.rm=T)
 
-  wrf=read.csv(paste("ECLfixes_",dom,"_0708_",wnames[w],"_",cat,"_v2_typing.csv",sep=""),
+  wrf=read.csv(paste("ECLfixes_",dom,"_0708_",wnames[w],"_",cat,"_v2_typing_impactsC.csv",sep=""),
                stringsAsFactors = F)
   wrf=wrf[,-1]
   wrf$Date2=as.POSIXct(paste(as.character(wrf$Date),substr(wrf$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
   I=match(wrf$Date2,dates)
   wrf$GV=GV[I]
   
-  wrf_E=read.csv(paste("ECLevents_",dom,"_0708_",wnames[w],"_",cat,"_v2_typing.csv",sep=""),
+  wrf_E=read.csv(paste("ECLevents_",dom,"_0708_",wnames[w],"_",cat,"_v2_typing_impactsC.csv",sep=""),
                  stringsAsFactors = F)
   wrf_E=wrf_E[,-1]
   wrf_E$GV=NaN
@@ -92,6 +92,6 @@ for(w in 13:length(wnames))
   
   wrf_E$GVthresh=as.numeric(wrf_E$GV>=GVthresh)
   
-  write.csv(wrf,paste("ECLfixes_",dom,"_0708_",wnames[w],"_",cat,"_v2_typing_GV.csv",sep=""))
-  write.csv(wrf_E,paste("ECLevents_",dom,"_0708_",wnames[w],"_",cat,"_v2_typing_GV.csv",sep=""))
+  write.csv(wrf,paste("ECLfixes_",dom,"_0708_",wnames[w],"_",cat,"_v2_typing_impactsC_GV.csv",sep=""))
+  write.csv(wrf_E,paste("ECLevents_",dom,"_0708_",wnames[w],"_",cat,"_v2_typing_impactsC_GV.csv",sep=""))
 }

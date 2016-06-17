@@ -333,5 +333,67 @@ for(i in 1:length(erai_E[,1]))
   }
 }
   
-write.csv(erai,file="ECLfixes_umelb_erai_150_topo_rad2_proj100_typing.csv",stringsAsFactors=F)
-write.csv(erai_E,file="ECLevents_umelb_erai_150_topo_rad2_proj100_typing.csv")
+
+
+###############
+erai_E$Year=floor(erai_E$Date1/10000)
+erai_E$Month=floor(erai_E$Date1/100)%%100
+erai$Year=floor(erai$Date/10000)
+erai$Month=floor(erai$Date/100)%%100
+erai$Location2<-0
+I<-which(erai[,7]>=149 & erai[,7]<=154 & erai[,8]<(-37) & erai[,8]>=-41)
+erai$Location2[I]<-1
+I<-which(erai[,7]>=(149+(37+erai[,8])/2) & erai[,7]<=(154+(37+erai[,8])/2) & erai[,8]<(-31) & erai[,8]>=-37)
+erai$Location2[I]<-1
+I<-which(erai[,7]>=152 & erai[,7]<=157 & erai[,8]<=(-24) & erai[,8]>=-31)
+erai$Location2[I]<-1
+
+erai_E$CV_loc2<-erai_E$Location2<-0
+for(i in 1:length(erai_E$ID))
+{
+  I=which(erai$ID==erai_E$ID[i] & erai$Location2==1)
+  erai_E$Location2[i]=length(I)
+  if(length(I)>0) erai_E$CV_loc2[i]=max(erai$CV[I])
+}
+
+year=1980:2009
+
+count<-matrix(0,30,4)
+colnames(count)<-c("Events","Days Loc1","Events 2Loc2","Days Loc2")
+
+for(y in 1:length(year))
+{
+  count[y,1]=length(which(erai_E$Year==year[y]))
+  I=which(erai$Year==year[y] & erai$Location==1)
+  count[y,2]=length(unique(erai$Date[I]))
+  
+  count[y,3]=length(which(erai_E$Year==year[y] & erai_E$Location2>1))
+  I=which(erai$Year==year[y] & erai$Location2==1)
+  count[y,4]=length(unique(erai$Date[I]))
+}
+
+apply(count,2,mean)
+apply(count,2,range)
+
+
+count2<-matrix(0,12,4)
+colnames(count2)<-c("Events","Days Loc1","Events 2Loc2","Days Loc2")
+
+for(y in 1:12)
+{
+  count2[y,1]=length(which(erai_E$Month==y))
+  I=which(erai$Month==y & erai$Location==1)
+  count2[y,2]=length(unique(erai$Date[I]))
+  
+  count2[y,3]=length(which(erai_E$Month==y & erai_E$Location2>1))
+  I=which(erai$Month==y & erai$Location2==1)
+  count2[y,4]=length(unique(erai$Date[I]))
+}
+
+count3=count2
+for(i in 1:4) count3[,i]=100*count3[,i]/sum(count3[,i])
+
+plot(1:12,count3[,1],type="l",lwd=2,col=1,ylim=c(0,max(count3)))
+for(i in 2:4) lines(1:12,count3[,i],lwd=2,col=i)
+legend("bottomright",colnames(count2),lwd=2,col=1:4,bty="n",ncol=2)
+
