@@ -119,7 +119,7 @@ load("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/outputUM/WRFrain_d02.RData")
 
 library(akima)
 library(RNetCDF)
-a=open.nc("/srv/ccrc/data36/z3478332/WRF/output/WRF_d02_LH_PRCP_BRAN.nc")
+a=open.nc("/srv/ccrc/data45/z3478332/WRF/output/extracted_data/WRF_d02_LH_PRCP_BRAN.nc")
 lat=var.get.nc(a,"lat")
 lon=var.get.nc(a,"lon")
 latt=as.vector(lat)
@@ -174,7 +174,7 @@ filled.legend(Useful$x,Useful$y,t(ratio[,,4,1]*Useful$mask),lev=seq(0,2100,100),
 dev.off()
 }
 
-pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Totalrain_9009_panel.pdf",sep=""),width=16,height=4,pointsize=12)
+pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Totalrain_d02_9009_panel.pdf",sep=""),width=16,height=4,pointsize=12)
 layout(cbind(1,2,3,4),width=c(1,1,1,0.2))
 names=c("AWAP","NCEP-WRF","CMIP-WRF","NCEP-WRF","CMIP-WRF")
 for(i in c(1,4,5))
@@ -189,6 +189,41 @@ for(i in c(1,4,5))
 ColorBar(seq(0,2100,100),rich.colors(21),T,2) 
 dev.off()
 
+pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Totalrain_d02_9009_panel_v2.pdf",sep=""),width=10,height=4,pointsize=12)
+layout(cbind(1,2,3,4),width=c(1,1,1,0.3))
+names=c("AWAP","NCEP-WRF","CMIP-WRF","NCEP-WRF","CMIP-WRF")
+for(i in c(1,4,5))
+{
+  par(mar=c(2,3,3,1))
+  tmp=t(rain_9009a[,,i,1]*Useful$mask)
+  tmp[tmp>2000]=2050
+  image(Useful$x[1,],Useful$y[1,],tmp,breaks=seq(0,2100,100),col=rich.colors(21),main=names[i],frame.plot=F,
+        xlim=c(145,155),ylim=c(-39,-24),xlab="",ylab="",cex.axis=1.5)
+  contour(Useful$x,Useful$y,maskE,add=T,drawlabels=F)
+}
+ColorBar(seq(0,2100,100),rich.colors(21),T,2) 
+dev.off()
+
+##### Using shades of blue & 
+
+source('~/Documents/R/color.palette.R')
+pal <- color.palette(c("white","skyblue1","blue","purple4"),c(10,20,10))
+
+pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Totalrain_d02_9009_panel_v3.pdf",sep=""),width=10,height=4,pointsize=12)
+layout(cbind(1,2,3,4),width=c(1,1,1,0.32))
+names=c("AWAP","NCEP-WRF","CMIP-WRF","NCEP-WRF","CMIP-WRF")
+for(i in c(1,4,5))
+{
+  par(mar=c(2,3,3,0))
+  tmp=t(rain_9009a[,,i,1]*Useful$mask)
+  tmp[tmp>2500]=2450
+  image(Useful$x[1,],Useful$y[1,],tmp,breaks=seq(0,2500,100),col=pal(25),main=names[i],frame.plot=F,
+        xlim=c(145,155),ylim=c(-39,-24),xlab="",ylab="",cex.axis=1.5,cex.main=1.5)
+  contour(Useful$x[1,],Useful$y[1,],tmp,add=T,levels=seq(0,2000,500),drawlabels=F)
+  contour(Useful$x,Useful$y,maskE,add=T,drawlabels=F)
+}
+ColorBar(seq(0,2500,100),pal(25),T,5) 
+dev.off()
 
 
 for(i in 1:5)
@@ -225,12 +260,12 @@ for(i in 1:5)
   dev.off()
 }
 
-pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Ratio_9006_total_panel.pdf",sep=""),width=10,height=4,pointsize=12)
+pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Ratio_9009_total_panel.pdf",sep=""),width=10,height=4,pointsize=12)
 layout(cbind(1,2,3,4),width=c(1,1,1,0.3))
 for(i in c(2,4,5))
 {
   par(mar=c(2,3,3,1))
-  tmp=t(ratio_9006[,,i,1]*Useful$mask)
+  tmp=t(ratio_9009[,,i,1]*Useful$mask)
   tmp[tmp>0.5]=0.525
   image(Useful$x[1,],Useful$y[1,],tmp,breaks=seq(0,0.55,0.05),col=rich.colors(11),main=names2[i],frame.plot=F,
         xlim=c(145,155),ylim=c(-39,-24),xlab="",ylab="",cex.axis=1.5)
@@ -238,6 +273,27 @@ for(i in c(2,4,5))
 }
 ColorBar(seq(0,0.55,0.05),rich.colors(11),T,2,c("0%","5%","10%","15%","20%","25%","30%","35%","40%","45%","50%","55%")) 
 dev.off()
+
+
+pal <- color.palette(c("white","skyblue1","blue","purple4"),c(10,20,10))
+names1=c("total","5mm","25mm","50mm")
+
+for(j in 1:4)
+{
+pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Ratio_9009_",names1[j],"_panel_v3.pdf",sep=""),width=10,height=4,pointsize=12)
+layout(cbind(1,2,3,4),width=c(1,1,1,0.3))
+for(i in c(2,4,5))
+{
+  par(mar=c(2,3,3,1))
+  tmp=t(ratio_9009[,,i,j]*Useful$mask)
+  tmp[tmp>0.5]=0.525
+  image(Useful$x[1,],Useful$y[1,],tmp,breaks=seq(0,0.55,0.05),col=pal(11),main=names2[i],frame.plot=F,
+        xlim=c(145,155),ylim=c(-39,-24),xlab="",ylab="",cex.axis=1.5)
+  contour(Useful$x,Useful$y,maskE,add=T,drawlabels=F)
+}
+ColorBar(seq(0,0.55,0.05),pal(11),T,2,c("0%","5%","10%","15%","20%","25%","30%","35%","40%","45%","50%","55%")) 
+dev.off()
+}
 
 names2=dimnames(ratio)[[3]]
 for(i in 1:5)
@@ -288,3 +344,54 @@ stat<-array(0,c(5,3,4))
 for(i in 1:5)
   for(j in 1:3)
     for(k in 1:4) stat[i,j,k]=mean(ratio3[,,i,j,k]*UsefulE$mask,na.rm=T)
+
+########### Calibrated!
+library(akima)
+library(RNetCDF)
+a=open.nc("/srv/ccrc/data45/z3478332/WRF/output/extracted_data/WRF_d02_LH_PRCP_BRAN.nc")
+lat=var.get.nc(a,"lat")
+lon=var.get.nc(a,"lon")
+latt=as.vector(lat)
+lont=as.vector(lon)
+library("R.matlab")
+readMat('~/Documents/GDI/Useful_ECL.mat')->UsefulE
+maskE<-t(UsefulE$mask)
+maskE[is.na(maskE)]=0
+readMat('~/Documents/GDI/Useful.mat')->Useful
+mask<-t(Useful$mask)
+mask[is.na(mask)]=0
+ColorBar <- function(brks,cols,vert=T,subsampleg=1,breaklab=brks)
+{
+  par(mar = c(3, 1, 3, 3), mgp = c(1, 1, 0), las = 1, cex = 1)
+  image(1, c(1:length(cols)), t(c(1:length(cols))), axes = FALSE, col = cols, 
+        xlab = '', ylab = '')
+  box()
+  axis(4, at = seq(0.5, length(brks) - 0.5, subsampleg), tick = TRUE, 
+       labels = breaklab[seq(1, length(brks), subsampleg)])
+}
+
+
+load("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/outputUM/ECLrain_ratio_AWAPcalib_proj100_rad2cv1.RData")
+
+pal <- color.palette(c("white","skyblue1","blue","purple4"),c(10,20,10))
+names1=c("total","5mm","25mm","50mm")
+names2=dimnames(ratio)[[3]]
+
+for(j in 1:4)
+{
+  pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Ratio_9009_",names1[j],"_panel_AWAPcalib.pdf",sep=""),width=10,height=4,pointsize=12)
+  layout(cbind(1,2,3,4),width=c(1,1,1,0.3))
+  for(i in c(2,4,5))
+  {
+    par(mar=c(2,3,3,1))
+    tmp=ratio[,,i,j]*t(Useful$mask)
+    tmp[tmp>0.5]=0.525
+    image(Useful$x[1,],Useful$y[1,],tmp,breaks=seq(0,0.55,0.05),col=pal(11),main=names2[i],frame.plot=F,
+          xlim=c(145,155),ylim=c(-39,-24),xlab="",ylab="",cex.axis=1.5)
+    contour(Useful$x,Useful$y,maskE,add=T,drawlabels=F)
+  }
+  ColorBar(seq(0,0.55,0.05),pal(11),T,2,c("0%","5%","10%","15%","20%","25%","30%","35%","40%","45%","50%","55%")) 
+  dev.off()
+}
+
+

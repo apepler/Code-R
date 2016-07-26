@@ -14,7 +14,7 @@ source('~/Documents/R/color.palette.R')
 pal <- color.palette(c("red","yellow","white","cyan","blue"), c(20,20,20,20))
 
 ### Compares the PDF of two datasets
-makePDF = function(data1,data2,xlabel="Intensity",labloc="topleft",leg=c("Data1","Data2")) {
+makePDF = function(data1,data2,xlabel="Intensity",labloc="topright",leg=c("Data1","Data2"),tit="") {
   a=density(data1,na.rm=T)
   b=density(data2,na.rm=T)
   
@@ -29,7 +29,7 @@ makePDF = function(data1,data2,xlabel="Intensity",labloc="topleft",leg=c("Data1"
   }
   
   plot(a,col=rgb(0,0,1,1/4),xlim=lims,ylim=range(0,a$y,b$y),
-       xlab=xlabel,ylab="Frequency")
+       xlab=xlabel,ylab="Frequency",main=tit)
   polygon(a,col=rgb(0,0,1,1/4),density=-1)
   polygon(b,col=rgb(1,0,0,1/4),density=-1)
   legend(labloc,legend=leg,

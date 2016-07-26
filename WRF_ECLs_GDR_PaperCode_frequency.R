@@ -145,7 +145,7 @@ median(count[,2]/count[,1])
 count2=matrix(NaN,6,4)
 colnames(count2)=c("Control","NoTopo","Control L2","NoTopo L2")
 rownames(count2)=c("R1 50km","R2 50km","R3 50km","R1 10km","R2 10km","R3 10km")
-cvthresh=2 ## Change this if I want a minimum CV threshold
+cvthresh=1 ## Change this if I want a minimum CV threshold
 countthresh=NaN ## Change this if I want to use a CV threshold that gives X events p.a. for the BRAN (control) case
 
 for(i in 1:6)
@@ -155,7 +155,49 @@ for(i in 1:6)
   count2[i,3]=length(which(fixes[[i]]$Location2==1 & fixes[[i]]$CV>=cvthresh))
   count2[i,4]=length(which(fixes_notopo[[i]]$Location2==1 & fixes_notopo[[i]]$CV>=cvthresh))
 }
-median(count[,2]/count[,1])
+median(count2[,4]/count2[,3])
+
+########## Prep for box plot
+
+count=array(NaN,c(6,2,5,4))
+dimnames(count)[[1]]=c("R1 50km","R2 50km","R3 50km","R1 10km","R2 10km","R3 10km")
+dimnames(count)[[2]]=c("Control","NoTopo")
+cvthresh=c(1,1.5,2,2.5,3)
+dimnames(count)[[3]]=cvthresh
+dimnames(count)[[4]]=c("Events","Fixes","Days","CoastDays")
+
+for(i in 1:6)
+  for(j in 1:5)
+{
+    count[i,1,j,1]=length(which(events[[i]]$CV2>=cvthresh[j]))
+    count[i,2,j,1]=length(which(events_notopo[[i]]$CV2>=cvthresh[j]))
+    
+    count[i,1,j,2]=length(which(fixes[[i]]$Location==1 & fixes[[i]]$CV>=cvthresh[j]))
+    count[i,2,j,2]=length(which(fixes_notopo[[i]]$Location==1 & fixes_notopo[[i]]$CV>=cvthresh[j]))
+    
+    count[i,1,j,3]=length(unique(fixes[[i]]$Date[fixes[[i]]$Location==1 & fixes[[i]]$CV>=cvthresh[j]]))
+    count[i,2,j,3]=length(unique(fixes_notopo[[i]]$Date[fixes_notopo[[i]]$Location==1 & fixes_notopo[[i]]$CV>=cvthresh[j]]))
+    
+    count[i,1,j,4]=length(unique(fixes[[i]]$Date[fixes[[i]]$Location2==1 & fixes[[i]]$CV>=cvthresh[j]]))
+    count[i,2,j,4]=length(unique(fixes_notopo[[i]]$Date[fixes_notopo[[i]]$Location2==1 & fixes_notopo[[i]]$CV>=cvthresh[j]]))
+    
+}
+
+change=100*((count[,2,,]/count[,1,,])-1)
+names(dimnames(change))<-c("Source","Intensity","Stat")
+
+library(ggplot2)
+library(reshape2)
+data=melt(change[,c(1,3),c(1,3:4)])
+
+pdf(paste(figdir,"ECL_change_boxplot_NoTopo_vstrength_cv2.pdf",sep=""),height=5,width=5)
+ggplot(data, aes(x = Stat, y = value, fill = Intensity)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c(rgb(0,0,1,1/4),rgb(1,0,0,1/4))) + 
+  scale_y_continuous(breaks=seq(-75, 75, 25)) +
+  theme_bw() + ylab("Percentage change in ECLs") + xlab("") +  geom_hline(yintercept = 0)
+dev.off()
+
 
 ### What about extreme events?
 count=array(NaN,c(6,2,12))

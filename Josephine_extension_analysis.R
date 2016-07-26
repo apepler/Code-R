@@ -364,3 +364,30 @@ for(t in 1:4)
   axis(1,at=seq(-0.5,14.5,1),labels=c(NA,decades,NA),lwd.ticks=3)
   dev.off()
 }
+
+
+########## v2c
+
+ann_v2c<-read.csv("/srv/ccrc/data34/z3478332/20CR/ECLs/LAP_AnnualFreq_20CR_v2c.csv")
+
+decades2=seq(1851,2011,10)
+decadalfreq_v2c=matrix(0,length(decades2),58)
+
+for(i in 1:length(decades2))
+{
+  I=which(ann_v2c[,1]>=decades2[i] & ann_v2c[,1]<=decades2[i]+9)
+  decadalfreq_v2c[i,]=apply(ann_v2c[I,2:59],2,sum)
+}
+
+pdf(file="Boxplot_decadal_vmeanERAI_v2c.pdf",height=4,width=7)
+boxplot(t(decadalfreq_v2c[1:16,1:56]),ylim=c(0,250),axes=F,bty="o",col="gray",xlab="Decade",ylab="Count of ECLs")
+points(1:16,decadalfreq_v2c[1:16,58],pch=4,cex=1,lwd=3)
+axis(2,at=seq(-50,250,50),cex.axis=0.7)
+axis(1,at=seq(-0.5,16.5,1),labels=c(NA,decades2),cex.axis=0.7)
+points(14:16,umdec[12:14],pch=17,col="grey")
+dev.off()
+
+
+I=which(years2>=1979 & years2<2012)
+J=which(ann_v2c[,1]>=1979 & ann_v2c[,1]<2012)
+cor(apply(annfreq[I,1:56],1,mean),ann_v2c[J,58])

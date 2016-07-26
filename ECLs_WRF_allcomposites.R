@@ -16,8 +16,9 @@ wrfv=c("R1","R2","R3")
 cat=c("rad5_p100","rad5_p240","rad2_p100","rad2_p240","rad2_p100_cv0.5")
 c=3
 dir='/srv/ccrc/data34/z3478332/ECLtracks/outputUM_wrf_2007_all/typing/'
-events<-fixes<-comp<-list()
-comp_rain<-comp_wind<-array(0,c(101,101,3,5))
+events<-fixes<-list()
+comp_rain_d01<-comp_wind_d01<-array(0,c(21,21,3,5))
+comp_rain_d02<-comp_wind_d02<-array(0,c(101,101,3,5))
 tlist=c("","_notopo","_BRAN","_BRAN_noeac","_BRAN_2eac")
 dir1=c(36,36,37,37,45)
 
@@ -37,11 +38,13 @@ ColorBar <- function(brks,cols,vert=T,subsampleg=1)
 }
 
 
+
 n=1
-dom="d02"
+for(dom in c("d01","d02"))
 for(type in 1:5)
     for(r in 1:3)
     {
+      
       if(type<5)
       {
       events[[n]]=read.csv(paste(dir,"ECLevents_",dom,"_0708_R",r,tlist[type],"_",cat[c],"_typing_impacts.csv",sep=""))
@@ -66,21 +69,35 @@ for(type in 1:5)
       
       ### Rain stuff
       
-      if(type<5) a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/ECLrain_d02_0708_",cat[c],"_centred.nc",sep="")) else
-        a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/Analysis/ECLrain_d02_0708_",cat[c],"_v2_centred.nc",sep=""))
+      if(dom=="d01")
+      {
+      if(type<5) a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/ECLrain_0708_",cat[c],"_centred.nc",sep="")) else
+        a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/Analysis/ECLrain_0708_",cat[c],"_v2_centred.nc",sep=""))
       tmp=var.get.nc(a,"ECLrain")
-      I=which(fixes[[n]]$Location==1)
-      #fixes[[n]]$MeanRainS=apply(tmp[,1:50,],3,mean,na.rm=T)
-      #fixes[[n]]$MeanRainN=apply(tmp[,52:101,],3,mean,na.rm=T)
-      comp_rain[,,r,type]=apply(tmp[,,I],c(1,2),mean,na.rm=T)
+      I=which(fixes[[n]]$Location2==1)
+      comp_rain_d01[,,r,type]=apply(tmp[,,I],c(1,2),mean,na.rm=T)
       
-      if(type<5) a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/ECLwind_d02_0708_",cat[c],".nc",sep="")) else
-        a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/Analysis/ECLwind_d02_0708_",cat[c],"_v2.nc",sep=""))
+      if(type<5) a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/ECLwind_",dom,"_0708_",cat[c],".nc",sep="")) else
+        a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/Analysis/ECLwind_",dom,"_0708_",cat[c],"_v2.nc",sep=""))
       tmp=var.get.nc(a,"ECL_WS10")
-      I=which(fixes[[n]]$Location==1)
-      comp_wind[,,r,type]=apply(tmp[,,I],c(1,2),mean,na.rm=T)      
+      I=which(fixes[[n]]$Location2==1)
+      comp_wind_d01[,,r,type]=apply(tmp[,,I],c(1,2),mean,na.rm=T)
+      } else {
+        if(type<5) a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/ECLrain_",dom,"_0708_",cat[c],"_centred.nc",sep="")) else
+          a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/Analysis/ECLrain_",dom,"_0708_",cat[c],"_v2_centred.nc",sep=""))
+        tmp=var.get.nc(a,"ECLrain")
+        I=which(fixes[[n]]$Location2==1)
+        comp_rain_d02[,,r,type]=apply(tmp[,,I],c(1,2),mean,na.rm=T)
+        
+        if(type<5) a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/ECLwind_",dom,"_0708_",cat[c],".nc",sep="")) else
+          a=open.nc(paste("/srv/ccrc/data",dir1[type],"/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007",tlist[type],"/out/Analysis/ECLwind_",dom,"_0708_",cat[c],"_v2.nc",sep=""))
+        tmp=var.get.nc(a,"ECL_WS10")
+        I=which(fixes[[n]]$Location2==1)
+        comp_wind_d02[,,r,type]=apply(tmp[,,I],c(1,2),mean,na.rm=T)
+      }
       n=n+1     
     }
+
 
 pal <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
 pdf(file=paste(figdir,"/ECL_rainC_0708_",dom,"_",cat[c],"_SST_location2.pdf",sep=""),width=11.5,height=4,pointsize=12)
@@ -399,4 +416,62 @@ for(j in 1:3)
   axis(2,at=seq(0,1,0.25),seq(-500,500,250))
 }
 ColorBar(-5:5,pal(10),subsampleg=2)
+dev.off()
+
+
+##############
+#############
+
+### Nice panel plot - mean rain (d02), average change (d01), average change (d02) - all Location2
+
+figdir="~/Documents/ECLs/WRFruns/0708/NoTopoPaper"
+pal1 <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
+pal2 <- color.palette(c("red","yellow","white","cyan","blue"), c(20,20,20,20))
+
+pdf(file=paste(figdir,"/ECL_rainC_0708_",dom,"_",cat[c],"_GDR_location2_vres.pdf",sep=""),width=12,height=4,pointsize=12)
+layout(cbind(1,2,3,4,5),width=c(1,0.3,1,1,0.3))
+
+par(mar=c(3,3,4,1), mgp = c(3, 1, 0),cex=1)
+image(apply(comp_rain_d02[,,,1],c(1,2),mean),breaks=c(seq(0,14,1),100),col=pal1(15),main="Average rainfall",axes=F)
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250))
+axis(2,at=seq(0,1,0.25),seq(-500,500,250))
+
+ColorBar(c(seq(0,14,1),100),pal1(15),subsampleg=2)
+
+par(mar=c(3,3,4,1), mgp = c(3, 1, 0),cex=1)
+image(apply(comp_rain_d01[,,,2]-comp_rain_d01[,,,1],c(1,2),mean),breaks=-7:7,col=pal2(14),main="50km resolution",axes=F)
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250))
+axis(2,at=seq(0,1,0.25),seq(-500,500,250))
+image(apply(comp_rain_d02[,,,2]-comp_rain_d02[,,,1],c(1,2),mean),breaks=-7:7,col=pal2(14),main="10km resolution",axes=F)
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250))
+axis(2,at=seq(0,1,0.25),seq(-500,500,250))
+
+ColorBar(-7:7,pal2(14),subsampleg=2)
+dev.off()
+
+pdf(file=paste(figdir,"/ECL_wind_0708_",dom,"_",cat[c],"_GDR_location2_vres.pdf",sep=""),width=12,height=4,pointsize=12)
+layout(cbind(1,2,3,4,5),width=c(1,0.3,1,1,0.3))
+
+par(mar=c(3,3,4,1), mgp = c(3, 1, 0),cex=1)
+image(apply(comp_wind_d02[,,,1],c(1,2),mean),breaks=c(seq(0,14,1),100),col=pal1(15),main="Average rainfall",axes=F)
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250))
+axis(2,at=seq(0,1,0.25),seq(-500,500,250))
+
+ColorBar(c(seq(0,14,1),100),pal1(15),subsampleg=2)
+
+par(mar=c(3,3,4,1), mgp = c(3, 1, 0),cex=1)
+image(apply(comp_wind_d01[,,,2]-comp_wind_d01[,,,1],c(1,2),mean),breaks=seq(-3,3,0.5),col=pal2(12),main="50km resolution",axes=F)
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250))
+axis(2,at=seq(0,1,0.25),seq(-500,500,250))
+image(apply(comp_wind_d02[,,,2]-comp_wind_d02[,,,1],c(1,2),mean),breaks=seq(-3,3,0.5),col=pal2(12),main="10km resolution",axes=F)
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250))
+axis(2,at=seq(0,1,0.25),seq(-500,500,250))
+
+ColorBar(seq(-3,3,0.5),pal2(12),subsampleg=2)
 dev.off()

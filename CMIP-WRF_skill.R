@@ -134,7 +134,7 @@ names=c("NCEP","CMIP","NCEP-WRF","CMIP-WRF")
 library(maps)
 ColorBar <- function(brks,cols,labels=NA)
 {
-  par(mar = c(3, 1, 3, 4), mgp = c(1, 1, 0), las = 1, cex = 1.2)
+  par(mar = c(3, 1, 3, 3), mgp = c(1, 1, 0), las = 1, cex = 1.2)
   image(1, c(1:length(cols)), t(c(1:length(cols))), axes = FALSE, col = cols, 
         xlab = '', ylab = '')
   box()
@@ -158,6 +158,34 @@ map(add=T,lwd=2)
 ColorBar(bb2,cm2)
 dev.off()
 }
+
+### Panels
+pdf(file=paste("outputUM/ECL_locations_CORDEX_NCEPvWRF_panel_proj100_d01_v3.pdf",sep=""),width=17,height=5,pointsize=14)
+layout(cbind(1,2,3),c(1,1,0.2))
+par(mar=c(3,3,3,2))
+for(i in c(1,3))
+{
+image(lon,lat,t(loc2[,,i]),xlab="",ylab="",breaks=bb2,
+      col=cm2,zlim=c(-Inf,Inf),main=names[i],cex.axis=1.5,cex.main=2,
+      xlim=c(110,172.5),ylim=c(-45,-10))
+map(add=T,lwd=2)
+}
+ColorBar(bb2,cm2)
+dev.off()
+
+pdf(file=paste("outputUM/ECL_locations_CORDEX_CMIPvWRF_panel_proj100_d01_v3.pdf",sep=""),width=17,height=5,pointsize=14)
+layout(cbind(1,2,3),c(1,1,0.2))
+par(mar=c(3,3,3,2))
+for(i in c(2,4))
+{
+  image(lon,lat,t(loc2[,,i]),xlab="",ylab="",breaks=bb2,
+        col=cm2,zlim=c(-Inf,Inf),main=names[i],cex.axis=1.5,cex.main=2,
+        xlim=c(110,172.5),ylim=c(-45,-10))
+  map(add=T,lwd=2)
+}
+ColorBar(bb2,cm2)
+dev.off()
+
 
 ############
 ## Need the one w/ the impacts
@@ -231,10 +259,10 @@ n=1
 for(i in 1:5)
 {  for(j in 1:3)
 {
-  filelistC=paste("outputUM/proj100/outputUM_",cmip[i],"_WRF",wrf[j],"_50_rad2cv06/ECLfixes_compositerain_",cmip[i],"_wrf",wrf[j],"_proj100_rad2cv0.8_9009.nc",sep="")
+  filelistC=paste("outputUM/proj100/outputUM_",cmip[i],"_WRF",wrf[j],"_50_rad2cv06/ECLfixes_compositewind_",cmip[i],"_wrf",wrf[j],"_proj100_rad2cv0.8_9009.nc",sep="")
   
   a=open.nc(filelistC)
-  tmp=var.get.nc(a,"ECLrain")
+  tmp=var.get.nc(a,"ECL_WS10")
   tmp[tmp>=500]=NaN
   
   tmp2=read.csv(paste("outputUM/proj100/outputUM_",cmip[i],"_WRF",wrf[j],"_50_rad2cv06/ECLfixes_umelb_",cmip[i],"_wrf",wrf[j],"_proj100_rad2cv0.8_9009.csv",sep=""))
@@ -291,3 +319,27 @@ for(i in 1:5)
   stat[i,j]=mean(composite[,,n])
   n=n+1  
 }
+
+
+source('~/Documents/R/color.palette.R')
+pal <- color.palette(c("white","skyblue1","blue","purple4"),c(10,20,10))
+pdf(file="outputUM/ECL_compositewind_mean_v3.pdf",width=8.5,height=4)
+layout(cbind(1,2,3),width=c(1,1,0.3))
+par(mar=c(1,1,3,1))
+image(apply(composite[,,1:3],c(1,2),mean),breaks=c(seq(6,12,0.5),100),col=pal(13),main="NCEP-WRF",axes=F,cex.main=2)
+points(0.5,0.5,pch=4,col="black",lwd=3,cex=3)
+image(apply(composite[,,4:15],c(1,2),mean),breaks=c(seq(6,12,0.5),100),col=pal(13),main="CMIP-WRF",axes=F,cex.main=2)
+points(0.5,0.5,pch=4,col="black",lwd=3,cex=3)
+ColorBar(c(seq(6,12,0.5),100),pal(13),subsampleg=2)
+dev.off()
+
+
+
+stat=matrix(0,5,3)
+n=1
+for(i in 1:5)
+  for(j in 1:3)
+  {
+    stat[i,j]=mean(composite[,,n])
+    n=n+1  
+  }

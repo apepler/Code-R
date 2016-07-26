@@ -416,3 +416,7 @@ clist=c("black","grey","red","darkgreen","purple")
 plot(mthresh[1:21],mhist[,1],lwd=2,type="l",
      xlab="Intensity",ylab="Number of events",ylim=c(0,250))
 for(i in 2:5) lines(mthresh[1:21],mhist[,i],lwd=2,col=clist[i])
+
+
+
+

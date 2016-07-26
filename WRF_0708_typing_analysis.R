@@ -160,3 +160,45 @@ monthly2=abind(apply(monthly[3:5,,],c(2,3),sum),
                apply(monthly[9:11,,],c(2,3),sum),
                apply(monthly[c(12,1,2),,],c(2,3),sum),along=1)
 
+
+###############
+#################
+### Play with typing
+
+erai=read.csv("/srv/ccrc/data34/z3478332/ECLtracks/outputUM_erai_150_topo_rad2_proj100/ECLfixes_umelb_erai_150_topo_rad2_proj100_typing0708.csv")
+
+I=which(erai$Location==1)
+plot(erai$VL[I],erai$VU[I],xlim=c(-500,200),ylim=c(-500,200))
+abline(h=0,col="red")
+abline(v=0,col="red")
+
+cor(erai$B[I],erai$VL[I])
+
+plot(erai$VL[I],erai$B[I],xlim=c(-500,200),ylim=c(-50,200))
+abline(h=0,col="red")
+abline(v=0,col="red")
+
+## How does this compare to WRF
+I=which(erai$Location==1)
+plot(erai$VL[I],erai$VU[I],xlim=c(-500,200),ylim=c(-500,200))
+
+clist=c("red","green","blue")
+for(i in 1:3)
+{
+  I=which(fixes[[i]]$Location==1)
+  points(fixes[[i]]$VL[I],fixes[[i]]$VU[I],col=clist[i],pch=4)
+}
+abline(h=0,col="red")
+abline(v=0,col="red")
+
+I=which(erai$Location==1)
+plot(erai$VL[I],erai$B[I],xlim=c(-500,200),ylim=c(-50,200))
+
+clist=c("red","green","blue")
+for(i in 1:3)
+{
+  I=which(fixes[[i]]$Location==1)
+  points(fixes[[i]]$VL[I],fixes[[i]]$B[I],col=clist[i],pch=4)
+}
+abline(h=0,col="red")
+abline(v=0,col="red")
