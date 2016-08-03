@@ -193,6 +193,8 @@ dev.off()
 
 
 ######## Loook at rain vs WRF for Control/Notopo
+figdir="~/Documents/ECLs/WRFruns/0708/NoTopoPaper/"
+
 pal <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
 pdf(file=paste(figdir,"/ECL_rainC_0708_",dom,"_",cat[c],"_GDR_location_vwrf.pdf",sep=""),width=11.5,height=8,pointsize=12)
 layout(cbind(c(1,4),c(2,5),c(3,6),c(7,7)),width=c(1,1,1,0.3))
@@ -211,6 +213,31 @@ for(i in 1:2)
   }
 ColorBar(c(seq(0,14,1),100),pal(15),subsampleg=2)
 dev.off()
+
+pal <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
+pdf(file=paste(figdir,"/ECL_rainC_0708_d02_",cat[c],"_GDR_location2.pdf",sep=""),width=8.5,height=4,pointsize=12)
+layout(cbind(1,2,3),width=c(1,1,0.3))
+name=c("Control","NoTopo")
+for(i in 1:2)
+  {
+    par(mar=c(3,3,4,1))
+    image(apply(comp_rain_d02[,,,i],c(1,2),mean),breaks=c(seq(0,14,1),100),col=pal(15),main=name[i],axes=F,cex.main=2)
+    points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+    axis(1,at=seq(0,1,0.25),seq(-500,500,250))
+    axis(2,at=seq(0,1,0.25),seq(-500,500,250))
+  }
+ColorBar(c(seq(0,14,1),100),pal(15),subsampleg=2)
+dev.off()
+
+mr<-matrix(0,6,2)
+n=1
+  for(j in 1:3)
+    for(i in 1:2)
+  {
+    mr[j,i]=mean(comp_rain_d01[,,j,i])
+    mr[j+3,i]=mean(comp_rain_d02[,,j,i])
+  }
+
 
 pal <- color.palette(c("red","yellow","white","cyan","blue"), c(20,20,20,20))
 pdf(file=paste(figdir,"/ECL_rainC_0708_",dom,"_",cat[c],"_GDR_location_vwrf_change.pdf",sep=""),width=11.5,height=4,pointsize=12)

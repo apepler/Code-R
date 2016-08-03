@@ -136,3 +136,30 @@ CSI_days <- function(fixes1,fixes2,day1=NaN,day2=NaN)
   return(CSI)
 }
 
+
+fixmatch <- function(fixes1,fixes2,GV=F,timediff=6,dist=500)
+{
+    fixes1=fixes1[fixes1$Location==1,]
+    
+    match<-array(NaN,c(length(fixes1$ID),10))
+    dimnames(match)[[2]]=c("ID","Fix","Location2","CV","MSLP","GV","MatchHours","CV2","MSLP2","GV2")
+    match[,1:6]=cbind(fixes1$ID,fixes1$Fix,fixes1$Location2,fixes1$CV,fixes1$MSLP,fixes1$GV)
+    
+    fixes1$Date2=as.POSIXct(paste(as.character(fixes1$Date),substr(fixes1$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
+    fixes2$Date2=as.POSIXct(paste(as.character(fixes2$Date),substr(fixes2$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
+    
+    for(i in 1:length(fixes1$ID))
+    {
+      tmp=spDistsN1(cbind(fixes2$Lon,fixes2$Lat),c(fixes1$Lon[i],fixes1$Lat[i]),longlat=T)
+      I=which(fixes2$Date2<=fixes1$Date2[i]+(60*60*timediff) & fixes2$Date2>=fixes1$Date2[i]-(60*60*timediff) & tmp<=dist)
+      if(length(I)>0)
+      {
+        match[i,7]=length(I) #All events that match
+        match[i,8]=max(fixes2$CV[I])
+        match[i,9]=min(fixes2$MSLP[I])
+        match[i,10]=min(fixes2$GV[I])
+      } else match[i,7]=0
+    }
+
+  return(match)
+}

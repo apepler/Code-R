@@ -75,33 +75,6 @@ for(dom in c("d01","d02"))
     n=n+1     
   }
 
-####### Some testing - match between d01 & d02
-matchtest<-array(0,c(3,2,2))
-for(i in 1:3)
-{
-  a=eventmatch(events[[i]],fixes[[i]],events[[i+3]],fixes[[i+3]])
-  matchtest[i,1,1]=length(which(a[,4]>0))/length(a[,4])
-  
-  a=eventmatch(events_notopo[[i]],fixes_notopo[[i]],events_notopo[[i+3]],fixes_notopo[[i+3]])
-  matchtest[i,2,1]=length(which(a[,4]>0))/length(a[,4])
-  
-  a=eventmatch(events[[i+3]],fixes[[i+3]],events[[i]],fixes[[i]])
-  matchtest[i,1,2]=length(which(a[,4]>0))/length(a[,4])
-  
-  a=eventmatch(events_notopo[[i+3]],fixes_notopo[[i+3]],events_notopo[[i]],fixes_notopo[[i]])
-  matchtest[i,2,2]=length(which(a[,4]>0))/length(a[,4])
-}
-
-matchtest2<-array(0,c(6,2))
-for(i in 1:6)
-{
-  a=eventmatch(events_notopo[[i]],fixes_notopo[[i]],events_notopo[[5]],fixes_notopo[[5]])
-  matchtest2[i,1]=length(which(a[,4]>0))/length(a[,4])
-  a=eventmatch(events_notopo[[5]],fixes_notopo[[5]],events_notopo[[i]],fixes_notopo[[i]])
-  matchtest2[i,2]=length(which(a[,4]>0))/length(a[,4])
-}
-
-
 count=matrix(NaN,6,2)
 colnames(count)=c("Control","NoTopo")
 rownames(count)=c("R1 50km","R2 50km","R2 50km","R1 10km","R2 10km","R3 10km")
@@ -229,6 +202,69 @@ count[,2,]/count[,1,]
 
 apply(count[,2,]/count[,1,],2,median)
 
+##Change in rain distribution?
+for(k in 1:6) print(t.test(fixes[[k]]$MeanRain500[fixes[[k]]$Location2==1],fixes_notopo[[k]]$MeanRain500[fixes_notopo[[k]]$Location2==1]))
+
+for(k in 1:6)
+{
+  if(k==1) tmp1=fixes[[k]]$MeanRain500[fixes[[k]]$Location2==1] else tmp1=c(tmp1,fixes[[k]]$MeanRain500[fixes[[k]]$Location2==1])
+  if(k==1) tmp2=fixes_notopo[[k]]$MeanRain500[fixes_notopo[[k]]$Location2==1] else tmp2=c(tmp2,fixes_notopo[[k]]$MeanRain500[fixes_notopo[[k]]$Location2==1])
+}
+
+t.test(tmp1,tmp2)
+
+dens<-array(NaN,c(512,8,2))
+dimnames(dens)[[2]]=c("R1 50km","R2 50km","R3 50km","R1 10km","R2 10km","R3 10km","All 50km","All 10km")
+dimnames(dens)[[3]]=c("Control","NoTopo")
+
+for(k in 1:6)
+{
+  a=density(fixes[[k]]$MeanRain500[fixes[[k]]$Location2==1],from=0,to=20,na.rm=T)
+  dens[,k,1]=a$y
+  a=density(fixes_notopo[[k]]$MeanRain500[fixes_notopo[[k]]$Location2==1],from=0,to=20,na.rm=T)
+  dens[,k,2]=a$y
+  
+  if(k==1 | k==4) tmp1=fixes[[k]]$MeanRain500[fixes[[k]]$Location2==1] else tmp1=c(tmp1,fixes[[k]]$MeanRain500[fixes[[k]]$Location2==1])
+  if(k==1 | k==4) tmp2=fixes_notopo[[k]]$MeanRain500[fixes_notopo[[k]]$Location2==1] else tmp2=c(tmp2,fixes_notopo[[k]]$MeanRain500[fixes_notopo[[k]]$Location2==1])
+  
+  a=density(tmp1,from=0,to=20,na.rm=T)
+  b=density(tmp2,from=0,to=20,na.rm=T)
+  
+  if(k==3)
+  {
+    dens[,7,1]=a$y
+    dens[,7,2]=b$y
+  }
+  if(k==6)
+  {
+    dens[,8,1]=a$y
+    dens[,8,2]=b$y
+  }
+}
+
+ty=c(1,2)
+plot(NA,xlim=c(0,20),ylim=c(0,0.2))
+for(i in 1:2) lines(a$x,dens[,i+6,1],col="darkgrey",lwd=3,lty=ty[i])
+for(i in 1:2) lines(a$x,dens[,i+6,2],col="black",lwd=3,lty=ty[i])
+lines(a$x,apply(dens[,4:6,1],1,mean),col="darkgrey",lwd=3)
+
+lims=range(data1,data2,na.rm=T)
+if((lims[2]-lims[1])<10)
+{
+  lims[1]=floor(lims[1])
+  lims[2]=ceiling(lims[2])
+} else {
+  lims[1]=floor(lims[1]/5)*5
+  lims[2]=ceiling(lims[2]/5)*5
+}
+
+plot(a,col=rgb(0,0,1,1/4),xlim=lims,ylim=range(0,a$y,b$y),
+     xlab=xlabel,ylab="Frequency",main=tit)
+polygon(a,col=rgb(0,0,1,1/4),density=-1)
+polygon(b,col=rgb(1,0,0,1/4),density=-1)
+legend(labloc,legend=leg,
+       col=c(rgb(0,0,1,1/4),rgb(1,0,0,1/4)),lwd=4,cex=1,bty="n")   
+
 
 #### What about Loc?
 
@@ -274,11 +310,32 @@ for(j in 1:2)
     count2[i,j,12]=length(which(ev$MaxPointWind250>=22.2))
     
   }
+
+count2[,2,]/count2[,1,]
 apply(count2[,2,]/count2[,1,],2,median)
 
-
-
 for(i in 1:6) print(makePDF(fixes[[i]]$CV[fixes[[i]]$Location2==1],fixes_notopo[[i]]$CV[fixes_notopo[[i]]$Location2==1]))
+
+count3=array(NaN,c(6,2,8))
+dimnames(count3)[[1]]=c("R1 d01","R2 d01","R3 d01","R1 d02","R2 d02","R3 d02")
+dimnames(count3)[[2]]=c("Control","NoTopo")
+dimnames(count3)[[3]]=c("All","CV>=2.5","Bombs","Mean rain>6 mm/6hr","Mean rain>9 mm/6hr",
+                        "Max rain>50 mm/6hr","Mean wind> 40 km/hr","Max wind> 80 km/hr")
+
+for(j in 1:2)
+  for(i in 1:6)
+  {
+    if(j==1) ev=fixes[[i]][fixes[[i]]$Location2>0,] else if(j==2) ev=fixes_notopo[[i]][fixes_notopo[[i]]$Location2>0,] 
+
+    count3[i,j,1]=length(ev$CV)
+    count3[i,j,2]=length(which(ev$CV>=2))
+    count3[i,j,3]=length(which(ev$NDR>=1))
+    count3[i,j,4]=length(which(ev$MeanRain500>=6))
+    count3[i,j,5]=length(which(ev$MeanRain500>=9))
+    count3[i,j,6]=length(which(ev$MaxRain500>=50))
+    count3[i,j,7]=length(which(ev$MeanWind500>=11.1))
+    count3[i,j,8]=length(which(ev$MaxWind500>=22.2))
+  }
 
 
 ######## Matching
@@ -473,31 +530,172 @@ lon=seq(100,180,5)
 #### Location of ECLs when in the region
 #### Edit slightly - needs to be unique time (in case two low centre same cell, unlikely)
 
-loc<-array(NaN,c(11,17,6,2,2))
+loc<-array(NaN,c(11,17,6,2,11))
+dimnames(loc)[[5]]=c("Count","Mean CV","Mean MSLP","Mean GV","Mean Radius","Mean CVchange","Mean NDR",
+                     "Mean MeanRain","Mean MaxRain","Mean MeanWind","Mean MaxWind")
+cols=c(10,9,32,12,15,16,26,27,30,31)
+
 for(i in 1:11)
   for(j in 1:17)
     for(k in 1:6)
     {
       I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Location==1)
+      J=which(fixes_notopo[[k]]$Lat>=lat[i]-2.5 & fixes_notopo[[k]]$Lat<lat[i]+2.5 & fixes_notopo[[k]]$Lon>=lon[j]-2.5 & fixes_notopo[[k]]$Lon<lon[j]+2.5 & fixes_notopo[[k]]$Location==1)
       loc[i,j,k,1,1]=length(I)
-      loc[i,j,k,1,2]=median(fixes[[k]]$MeanRain250[I],na.rm=T)
-      I=which(fixes_notopo[[k]]$Lat>=lat[i]-2.5 & fixes_notopo[[k]]$Lat<lat[i]+2.5 & fixes_notopo[[k]]$Lon>=lon[j]-2.5 & fixes_notopo[[k]]$Lon<lon[j]+2.5 & fixes_notopo[[k]]$Location==1)
-      loc[i,j,k,2,1]=length(I)
-      loc[i,j,k,2,2]=median(fixes_notopo[[k]]$MeanRain250[I],na.rm=T)
+      loc[i,j,k,2,1]=length(J)
+      
+      for(x in 1:length(cols))
+      {
+      loc[i,j,k,1,x+1]=mean(fixes[[k]][I,cols[x]],na.rm=T)
+      loc[i,j,k,2,x+1]=mean(fixes_notopo[[k]][J,cols[x]],na.rm=T)
+      }
     }
 
-loc2=apply(loc,c(1,2,4,5),mean,na.rm=T)
 
+loc2=apply((loc[,,,2,]-loc[,,,1,]),c(1,2,4),mean,na.rm=T)
+locPC=100*apply((loc[,,,2,]/loc[,,,1,])-1,c(1,2,4),mean,na.rm=T)
 
-#cols=gray(seq(1,0.1,-0.15))
-#bb=c(-0.5,0,1,2,4,8,12,100)
+fnames=c("freq","CV","MSLP","GV","Rad","CVdeep","NDR","MeanRain250","MaxRain250","MeanWind250","MaxWind250")
+ranges=c(8,0.2,4,4,0.4,0.2,0.4,4,20,2,4)
 
+for(x in 2:11)
+{
+pdf(file=paste(figdir,"ECL_location_",fnames[x],"_change.pdf",sep=""),width=5,height=4)
+      bb2=c(-10000,seq(-ranges[x],ranges[x],length.out=9),10000)
+  cm=pal(10)
+  layout(cbind(1,2),c(1,0.35))
+  par(mar=c(2,2,2,0))
+  image(lon,lat,t(loc2[,,x]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
+      main=dimnames(loc)[[5]][x],cex.axis=1,cex.main=1)
+  tmp=apply(loc[,,,2,x]>loc[,,,1,x],c(1,2),mean) ## Proportion with a positive change
+  sigmask=which(tmp>0.75 | tmp<0.25,arr.ind=T) ## Which have at least 3/4 (~ 5/6) in same direction 
+  points(lon[sigmask[,2]],lat[sigmask[,1]],col="black",pch=4,cex=2,lwd=2) ## Add some points
+  map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
+  ColorBar(bb2,cm)
+  dev.off()
+}
+
+x=1
+pdf(file=paste(figdir,"ECL_location_",fnames[x],"_PCchange.pdf",sep=""),width=5,height=4)
 bb2=c(-10000,seq(-40,40,10),10000)
 cm=pal(10)
-layout(cbind(1,2),c(1,0.3))
-image(lon,lat,100*t(apply((loc[,,,2,2]/loc[,,,1,2])-1,c(1,2),mean,na.rm=T)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),cex.axis=1.5,cex.main=1.5)
-tmp=apply(loc[,,,2,2]/loc[,,,1,2]>1,c(1,2),mean) ## Proportion with a positive change
+layout(cbind(1,2),c(1,0.35))
+par(mar=c(2,2,2,0))
+image(lon,lat,t(locPC[,,x]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
+      main=dimnames(loc)[[5]][x],cex.axis=1,cex.main=1)
+tmp=apply(loc[,,,2,x]/loc[,,,1,x]>1,c(1,2),mean) ## Proportion with a positive change
 sigmask=which(tmp>0.75 | tmp<0.25,arr.ind=T) ## Which have at least 3/4 (~ 5/6) in same direction 
 points(lon[sigmask[,2]],lat[sigmask[,1]],col="black",pch=4,cex=2,lwd=2) ## Add some points
 map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
 ColorBar(bb2,cm)
+dev.off()
+
+### What is the average intensity anyway?
+pdf(file=paste(figdir,"ECL_location_CV.pdf",sep=""),width=8.5,height=4)
+bb2=c(seq(0.9,1.9,0.1))
+pal1 <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
+cm=pal1(10)
+layout(cbind(1,2,3),c(1,1,0.3))
+par(mar=c(3,3,3,1))
+image(lon,lat,t(apply(loc[,,,1,2],c(1,2),mean)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
+      main="Control",cex.axis=1.5,cex.main=1.5)
+map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
+image(lon,lat,t(apply(loc[,,,2,2],c(1,2),mean)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
+      main="NoTopo",cex.axis=1.5,cex.main=1.5)
+map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
+ColorBar(bb2,cm)
+dev.off()
+
+####### Frequency of all lows vs CV2 lows
+
+loc<-array(NaN,c(11,17,6,2,4))
+cvthresh=c(1,1.5,2,2.5)
+
+for(i in 1:11)
+  for(j in 1:17)
+    for(k in 1:6)
+      for(x in 1:4)
+    {
+      I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & 
+                fixes[[k]]$Location==1 & fixes[[k]]$CV>=cvthresh[x])
+      J=which(fixes_notopo[[k]]$Lat>=lat[i]-2.5 & fixes_notopo[[k]]$Lat<lat[i]+2.5 & fixes_notopo[[k]]$Lon>=lon[j]-2.5 & fixes_notopo[[k]]$Lon<lon[j]+2.5 & 
+                fixes_notopo[[k]]$Location==1 & fixes_notopo[[k]]$CV>=cvthresh[x])
+      loc[i,j,k,1,x]=length(I)
+      loc[i,j,k,2,x]=length(J)
+      }
+
+pal1 <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
+ran=c(50,25,10,5)
+
+for(x in 1:4)
+{
+  pdf(file=paste(figdir,"ECL_location_frequency_CV",cvthresh[x],".pdf",sep=""),width=5,height=4)
+  bb2=c(-10000,seq(0,ran[x],length.out=11),10000)
+  cm=pal1(12)
+  layout(cbind(1,2),c(1,0.35))
+  par(mar=c(2,2,2,0))
+  image(lon,lat,t(apply(loc[,,,1,x],c(1,2),mean)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
+        main=dimnames(loc)[[5]][x],cex.axis=1,cex.main=1)
+  map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
+  ColorBar(bb2,cm)
+  dev.off()
+}
+
+pdf(file=paste(figdir,"ECL_location_frequency_CV2_comp.pdf",sep=""),width=8.5,height=4)
+bb2=c(-10000,seq(0,10,length.out=11),10000)
+cm=pal1(12)
+layout(cbind(1,2,3),c(1,1,0.3))
+par(mar=c(3,3,3,1))
+image(lon,lat,t(apply(loc[,,,1,3],c(1,2),mean)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
+      main="Control",cex.axis=1.5,cex.main=1.5)
+map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
+image(lon,lat,t(apply(loc[,,,2,3],c(1,2),mean)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
+      main="NoTopo",cex.axis=1.5,cex.main=1.5)
+map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
+ColorBar(bb2,cm)
+dev.off()
+
+###### Genesis location, & first-fix-above-2 location
+
+for(k in 1:6)
+{
+  if(k==1) tmp=fixes[[k]][fixes[[k]]$Fix==1,] else tmp=rbind(tmp,fixes[[k]][fixes[[k]]$Fix==1,])
+  I=events[[k]]$ID[events[[k]]$CV2>=2]
+  for(i in 1:length(I))
+  {
+    J=which(fixes[[k]]$ID==I[i] & fixes[[k]]$CV>=2)
+    if(i==1 & k==1) tmp2=fixes[[k]][J[1],] else tmp2=rbind(tmp2,fixes[[k]][J[1],])
+  }
+}
+
+plot(tmp$Lon,tmp$Lat,xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),pch=4,col="blue")
+map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
+points(tmp2$Lon,tmp2$Lat,xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),pch=4,col="blue",lwd=2)
+
+loc<-array(NaN,c(11,17,2))
+for(i in 1:11)
+  for(j in 1:17)
+      {
+        I=which(tmp$Lat>=lat[i]-2.5 & tmp$Lat<lat[i]+2.5 & tmp$Lon>=lon[j]-2.5 & tmp$Lon<lon[j]+2.5)
+        J=which(tmp2$Lat>=lat[i]-2.5 & tmp2$Lat<lat[i]+2.5 & tmp2$Lon>=lon[j]-2.5 & tmp2$Lon<lon[j]+2.5)
+        loc[i,j,1]=length(I)/6
+        loc[i,j,2]=length(J)/6
+      }
+
+bb2=c(-10000,seq(0,8,length.out=9),10000)
+cm=pal1(10)
+layout(cbind(1,2),c(1,0.3))
+par(mar=c(3,3,3,1))
+image(lon,lat,t(loc[,,1]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
+      main="Gen",cex.axis=1.5,cex.main=1.5)
+map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
+ColorBar(bb2,cm)
+bb2=c(-10000,seq(0,4,length.out=9),10000)
+cm=pal1(10)
+layout(cbind(1,2),c(1,0.3))
+par(mar=c(3,3,3,1))
+image(lon,lat,t(loc[,,2]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
+      main="Gen CV2",cex.axis=1.5,cex.main=1.5)
+map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
+ColorBar(bb2,cm)
+
