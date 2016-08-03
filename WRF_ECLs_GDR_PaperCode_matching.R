@@ -139,4 +139,30 @@ for(n in 1:6)
     cvchange[n,j,3]=mean(cv[[n]][I,2]-cv[[n]][I,1],na.rm=T)
   }
 
+for(n in 1:6) print(cor(cv[[n]][,2]-cv[[n]][,1],cv[[n]][,1],use="pairwise.complete.obs"))
+
+#### FixMatch
+
+match=list()
+n=1
+for(n in 1:6) match[[n]]=as.data.frame(fixmatch(fixes[[n]],fixes_notopo[[n]],timediff=1,dist=250))
+
+comp=array(NaN,c(6,5))
+dimnames(comp)[[1]]=c("d01 R1","d01 R2","d01 R3",
+                      "d02 R1","d02 R2","d02 R3")
+dimnames(comp)[[2]]=c("MatchHours","MatchEvents","CV2","MSLP2","GV2")
+
+for(n in 1:6)
+{
+  match[[n]]=match[[n]][match[[n]]$Location2==1,]
+  
+  comp[n,1]=length(which(match[[n]][,7]>0))/length(match[[n]][,1])
+  comp[n,2]=length(unique(match[[n]]$ID[match[[n]]$MatchHours>0]))/length(unique(match[[n]]$ID))
+  comp[n,3]=mean(match[[n]]$CV2-match[[n]]$CV,na.rm=T)
+  comp[n,4]=mean(match[[n]]$MSLP2-match[[n]]$MSLP,na.rm=T)
+  comp[n,5]=mean(match[[n]]$GV2-match[[n]]$GV,na.rm=T)
+}
+
+for(n in 1:6) print(cor(match[[n]]$CV2-match[[n]]$CV,match[[n]]$CV,use="pairwise.complete.obs"))
+
 
