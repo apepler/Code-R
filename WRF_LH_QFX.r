@@ -1,4 +1,4 @@
-setwd("/srv/ccrc/data36/z3478332/WRF/output/")
+setwd("/srv/ccrc/data45/z3478332/WRF/output/extracted_data")
 library(RNetCDF)
 
 a=open.nc("WRF_d01_LH_PRCP_BRAN.nc")
@@ -197,7 +197,7 @@ save(EAC_mask_d01,EAC_mask_d02,EAC_d01_all,EAC_d02_all,file="EAC_mask.RData")
 #####################
 ## ECL component of rainfall
 
-setwd("/srv/ccrc/data36/z3478332/WRF/output/")
+#setwd("/srv/ccrc/data36/z3478332/WRF/output/")
 library(RNetCDF)
 a=open.nc("WRF_d02_LH_PRCP_BRAN.nc")
 lat=var.get.nc(a,"lat")
@@ -209,7 +209,7 @@ a=open.nc("/srv/ccrc/data34/z3478332/WRF_d02_ESB_mask.nc")
 maskE=var.get.nc(a,"ESB")
 maskE[maskE==0]=NaN
 
-setwd("/srv/ccrc/data45/z3478332/WRF/output/")
+setwd("/srv/ccrc/data45/z3478332/WRF/output/ECLrain")
 types=c("BRAN","BRAN_noeac","BRAN_2eac2")
 r=1:3
 cat="rad2_p100"
@@ -417,4 +417,70 @@ ECLrain&threshold=(/6,12,24/)
 ECLrain@description="Number of hours with at least X mm/6hr accumulation within 500km radius of low centre"
 
 dir="/srv/ccrc/data30/z3393020/NARCliM/filtered/"+cmip(c)+"/"+wrfv(w)+"/"+runyears(c)+"/d01/"
+
+
+#### Need average ESB rain in 2007-2008 from AWAP, d01 and d02 - for reviewer comments
+#### Calculate both bias in average rain, & average bias
+#### Regridding both d01 & d02 to AWAP grid?
+
+library(RNetCDF)
+a=open.nc("/srv/ccrc/data02/z3236814/data/AWAP/MONTHLY/monthly_means_grid_0.05.dir.V3/pre_1200.nc")
+time=var.get.nc(a,"time")
+rain=var.get.nc(a,"pre",start=c(1,1,97),count=c(NA,NA,24))
+AWAP=apply(rain,c(1,2),sum)/2
+WRF<-array(0,c(886,691,3,2))
+
+library(R.matlab)
+readMat('~/Documents/GDI/Useful_ECL.mat')->UsefulE
+maskE<-t(UsefulE$mask)
+
+setwd("/srv/ccrc/data45/z3478332/WRF/output/extracted_data")
+library(RNetCDF)
+a=open.nc("WRF_d01_LH_PRCP.nc")
+lat=var.get.nc(a,"lat")
+lon=var.get.nc(a,"lon")
+latt=as.vector(lat)
+lont=as.vector(lon)
+P=var.get.nc(a,"PRCP_d01")
+
+library(akima)
+for(i in 1:3)
+{
+  a=as.vector(P[i,,])
+  a[which(is.na(a))]=0
+  b=interp(lont,latt,a,UsefulE$x,UsefulE$y)
+  WRF[,,i,1]=b$z
+}
+
+library(RNetCDF)
+a=open.nc("WRF_d02_LH_PRCP.nc")
+lat=var.get.nc(a,"lat")
+lon=var.get.nc(a,"lon")
+latt=as.vector(lat)
+lont=as.vector(lon)
+P=var.get.nc(a,"PRCP_d02")
+
+library(akima)
+for(i in 1:3)
+{
+  a=as.vector(P[i,,])
+  a[which(is.na(a))]=0
+  b=interp(lont,latt,a,UsefulE$x,UsefulE$y)
+  WRF[,,i,2]=b$z
+}
+WRF=WRF/2
+
+
+bias<-array(0,c(3,2,2))
+
+for(i in 1:3)
+  for(j in 1:2)
+  {
+    bias[i,j,1]=mean(WRF[,,i,j]*maskE,na.rm=T)-mean(AWAP*maskE,na.rm=T)
+    bias[i,j,2]=mean((WRF[,,i,j]/AWAP)*maskE,na.rm=T)
+  }
+
+
+
+
 

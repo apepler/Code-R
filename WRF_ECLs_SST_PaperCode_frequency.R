@@ -131,7 +131,26 @@ for(j in 1:3)
     change[j,1]=100*(median(count[,tmp[j]]/count[,2])-1)
     a=t.test(count[,tmp[j]],count[,2])
     change[j,2]=a$p.value # Yes I know this is mostly meaningless for effective n=3
+}
+
+### Split by season
+
+count<-array(0,c(6,3,4))
+
+for(j in 1:3)
+  for(i in 1:6)
+  {
+    if(j==1) events=events_noeac[[i]] else
+      if(j==2) events=eventsBRAN[[i]] else 
+        if(j==3) events=events_2eac[[i]] else next
+        
+        count[i,j,1]=length(which(events$Month>=3 & events$Month<=5))
+        count[i,j,2]=length(which(events$Month>=6 & events$Month<=8))
+        count[i,j,3]=length(which(events$Month>=9 & events$Month<=11))
+        count[i,j,4]=length(which(events$Month>=12 | events$Month<=2))
   }
+        
+        
 
 ### Make Figure 2
 
