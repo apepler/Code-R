@@ -26,8 +26,13 @@ for(y in 1:33)
   for(m in 1:12)
   {
     I=which(lat>=-41 & lat<=-24)
-    J=which(lon>=148 & lon<=161)
-    Tasman[y,m,1]=max(sst[J,I,n]-sstM[J,I,m],na.rm=T)
+    J=which(lon>=148 & lon<=155)
+    J2=which(lon>=160 & lon<=165)
+    tmp=sst[J,I,n]
+    for(i in 1:length(J)) tmp[i,]=tmp[i,]-apply(sst[J2,I,n],2,mean)
+    Tasman[y,m,1]=mean(tmp,na.rm=T)
+    #Tasman[y,m,1]=max(sst[J,I,n]-sstM[J,I,m],na.rm=T)
+    
     n=n+1
   }
 
@@ -46,8 +51,13 @@ for(y in 1:33)
   for(m in 1:12)
   {
     I=which(lat1>=-41 & lat1<=-24)
-    J=which(lon1>=148 & lon1<=161)
-    Tasman[y,m,3]=max(sst1[J,I,n]*mask2[J,I]-sstM[J,I,m],na.rm=T)
+    J=which(lon1>=148 & lon1<=155)
+    J2=which(lon1>=160 & lon1<=165)
+    tmp=sst1[J,I,n]
+    for(i in 1:length(J)) tmp[i,]=tmp[i,]-apply(sst[J2,I,n],2,mean)
+    Tasman[y,m,3]=mean(tmp,na.rm=T)
+    
+    #Tasman[y,m,3]=max(sst1[J,I,n]*mask2[J,I]-sstM[J,I,m],na.rm=T)
     n=n+1
   }
 
@@ -65,8 +75,13 @@ for(y in 1:33)
   for(m in 1:12)
   {
     I=which(lat1>=-41 & lat1<=-24)
-    J=which(lon1>=148 & lon1<=161)
-    Tasman[y,m,2]=max(sst1[J,I,n]-sstM[J,I,m],na.rm=T)
+    J=which(lon1>=148 & lon1<=155)
+    J2=which(lon1>=160 & lon1<=165)
+    tmp=sst1[J,I,n]
+    for(i in 1:length(J)) tmp[i,]=tmp[i,]-apply(sst1[J2,I,n],2,mean)
+    Tasman[y,m,2]=mean(tmp,na.rm=T)
+    
+    #Tasman[y,m,2]=max(sst1[J,I,n]-sstM[J,I,m],na.rm=T)
     n=n+1
   }
 

@@ -481,6 +481,33 @@ for(i in 1:3)
   }
 
 
+setwd("/srv/ccrc/data45/z3478332/WRF/output/extracted_data")
+a=open.nc("WRF_d01_LH_PRCP_BRAN.nc")
+lat=var.get.nc(a,"lat")
+lon=var.get.nc(a,"lon")
+mask=matrix(NaN,215,144)
+mask[(lat>=-40 & lat<=-24 & lon<=160 & lon>=150)]=1
+
+a=open.nc("/srv/ccrc/data34/z3478332/WRF_d01_ESB_mask.nc")
+maskE=var.get.nc(a,"ESB")
+maskE[maskE==0]=NaN
+
+library(RNetCDF)
+a=open.nc("/srv/ccrc/data45/z3478332/WRF/output/ERAI_R2_nonudging_notopo/out/impact/ECLrain_annual_ERA-nonudge_notopo_p100_rad2cv1.nc")
+AllRain<-var.get.nc(a,"allrain")
+ECLrain<-var.get.nc(a,"ECLrain")
+
+NoECLrain=AllRain-ECLrain
 
 
+
+P<-array(0,c(20,4))
+
+for(t in 1:20)
+  {
+    P[t,1]=mean(AllRain[,,t]*mask,na.rm=T)
+    P[t,2]=mean(AllRain[,,t]*maskE,na.rm=T)
+    P[t,3]=mean(ECLrain[,,t]*mask,na.rm=T)
+    P[t,4]=mean(ECLrain[,,t]*maskE,na.rm=T)
+  }
 
