@@ -86,7 +86,7 @@ for(dom in c("d01","d02"))
 
 ##########
 
-######## Figure 2
+######## Figure 3
 ####### Changes in total number of events
 
 count=matrix(NaN,6,4)
@@ -152,7 +152,7 @@ for(j in 1:3)
         
         
 
-### Make Figure 2
+### Make Figure 3
 
 pnt=c(1,2,4,1,2,4)
 cm=c("black","black","black","darkgrey","darkgrey","darkgrey")
@@ -168,7 +168,7 @@ points(rep(2,6),count[,4],pch=pnt,col=cm,cex=1.5,lwd=2)
 legend("topleft",c("R1","R2","R3","50km","10km"),pch=c(1,2,4,1,1),pt.lwd=2,col=c(1,1,1,1,"darkgrey"),pt.cex=1.5,bty="n",ncol=2)
 dev.off()
 
-############## Figure 3
+############## Figure 4
 ########## Changes in events by location
 
 lat=seq(-60,-10,5)
@@ -312,7 +312,7 @@ for(j in 1:3)
     count[i,j,12]=length(which(events$MaxPointWind250>=22.2))
   }
 
-######## Table 3
+######## Table 2
 
 table3=matrix(0,5,5)
 colnames(table3)=c("Mean rain>6 mm/6hr","Mean rain>12 mm/6hr",

@@ -480,6 +480,8 @@ for(i in 1:3)
     bias[i,j,2]=mean((WRF[,,i,j]/AWAP)*maskE,na.rm=T)
   }
 
+############NONUDGE
+
 
 setwd("/srv/ccrc/data45/z3478332/WRF/output/extracted_data")
 a=open.nc("WRF_d01_LH_PRCP_BRAN.nc")
@@ -499,15 +501,78 @@ ECLrain<-var.get.nc(a,"ECLrain")
 
 NoECLrain=AllRain-ECLrain
 
+P<-array(0,c(4,4))
 
-
-P<-array(0,c(20,4))
-
-for(t in 1:20)
+for(t in 1:4)
   {
-    P[t,1]=mean(AllRain[,,t]*mask,na.rm=T)
-    P[t,2]=mean(AllRain[,,t]*maskE,na.rm=T)
-    P[t,3]=mean(ECLrain[,,t]*mask,na.rm=T)
-    P[t,4]=mean(ECLrain[,,t]*maskE,na.rm=T)
+    P[t,1]=mean(apply(AllRain[,,t,],c(1,2),mean)*mask,na.rm=T)
+    P[t,2]=mean(apply(AllRain[,,t,],c(1,2),mean)*maskE,na.rm=T)
+    P[t,3]=mean(apply(ECLrain[,,t,],c(1,2),mean)*mask,na.rm=T)
+    P[t,4]=mean(apply(ECLrain[,,t,],c(1,2),mean)*maskE,na.rm=T)
+}
+
+
+###Nudge
+setwd("/srv/ccrc/data45/z3478332/WRF/output/ECLrain")
+library(RNetCDF)
+
+a=open.nc("/srv/ccrc/data45/z3478332/WRF/output/extracted_data/WRF_d01_LH_PRCP_BRAN.nc")
+lat=var.get.nc(a,"lat")
+lon=var.get.nc(a,"lon")
+
+mask=matrix(NaN,215,144)
+mask[(lat>=-40 & lat<=-24 & lon<=160 & lon>=150)]=1
+
+a=open.nc("/srv/ccrc/data34/z3478332/WRF_d01_ESB_mask.nc")
+maskE=var.get.nc(a,"ESB")
+maskE[maskE==0]=NaN
+
+types=c("","_notopo")
+r=1:3
+cat="rad2_p100"
+AllRain<-ECLrain<-NoECLrain<-array(0,c(215,144,4,3,3))
+
+for(t in 1:2)
+  for(r in 1:3)
+  {
+    a=open.nc(paste("ECLrain_0708_extremes_R",r,types[t],"_",cat,"_v3.nc",sep=""))
+    AllRain[,,,t,r]<-var.get.nc(a,"allrain")
+    ECLrain[,,,t,r]<-var.get.nc(a,"ECLrain")
   }
+
+dimnames(AllRain)[[4]]=types
+dimnames(AllRain)[[5]]=paste("R",1:3)
+
+NoECLrain=AllRain-ECLrain
+
+Ratio=ECLrain/AllRain
+
+P<-array(0,c(4,3,3,4))
+dimnames(P)[[1]]<-c("All","6 mm","12 mm","24 mm")
+dimnames(P)[[2]]<-types
+dimnames(P)[[3]]<-paste("R",1:3)
+dimnames(P)[[4]]<-c("All","ECL","NoECL","Ratio")
+
+P_ESB=P
+
+for(t in 1:3)
+  for(r in 1:3)
+    for(x in 1:4)
+    {
+      P[x,t,r,1]=mean(AllRain[,,x,t,r]*mask,na.rm=T)
+      P_ESB[x,t,r,1]=mean(AllRain[,,x,t,r]*maskE,na.rm=T)
+      P[x,t,r,2]=mean(ECLrain[,,x,t,r]*mask,na.rm=T)
+      P_ESB[x,t,r,2]=mean(ECLrain[,,x,t,r]*maskE,na.rm=T)
+      P[x,t,r,3]=mean(NoECLrain[,,x,t,r]*mask,na.rm=T)
+      P_ESB[x,t,r,3]=mean(NoECLrain[,,x,t,r]*maskE,na.rm=T)
+      P[x,t,r,4]=mean(Ratio[,,x,t,r]*mask,na.rm=T)
+      P_ESB[x,t,r,4]=mean(Ratio[,,x,t,r]*maskE,na.rm=T)
+    }
+
+apply(P,c(1,2,4),mean)
+apply(P_ESB,c(1,2,4),mean)
+P_ESB[1,,]
+
+apply(P_ESB[,2,,]/P_ESB[,1,,],c(1,3),mean)
+
 

@@ -101,6 +101,19 @@ for(i in 1:6)
 }
 median(count[,2]/count[,1])
 
+#### By season?
+
+count2=array(NaN,c(12,6,2))
+  for(j in 1:12)
+    for(k in 1:6)
+    {
+      I=which(events[[k]]$Month==j)
+      count2[j,k,1]=length(I)
+      I=which(events_notopo[[k]]$Month==j)
+      count2[j,k,2]=length(I)
+    }
+
+
 ##### What about count of Location2 events
 
 count=matrix(NaN,6,2)
@@ -173,10 +186,10 @@ dev.off()
 
 
 ### What about extreme events?
-count=array(NaN,c(6,2,12))
+count=array(NaN,c(6,2,13))
 dimnames(count)[[1]]=c("R1 d01","R2 d01","R3 d01","R1 d02","R2 d02","R3 d02")
 dimnames(count)[[2]]=c("Control","NoTopo")
-dimnames(count)[[3]]=c("All","CV>=2.5","Bombs","Formed in region","EC","SC","Mixed","Mean rain>6 mm/6hr","Mean rain>12 mm/6hr",
+dimnames(count)[[3]]=c("All","CV>=2.5","Bombs","Formed in region","Entered","EC","SC","Mixed","Mean rain>6 mm/6hr","Mean rain>12 mm/6hr",
                        "Max rain>50 mm/6hr","Mean wind> 50 km/hr","Max wind> 80 km/hr")
 
 for(j in 1:2)
@@ -189,14 +202,15 @@ for(j in 1:2)
       count[i,j,2]=length(which(ev$CV2>=2.5))
       count[i,j,3]=sum(ev$Bomb)
       count[i,j,4]=length(which(ev$EnteredFormed==1))
-      count[i,j,5]=length(which(ev$HartType=="EC"))
-      count[i,j,6]=length(which(ev$HartType=="SC"))
-      count[i,j,7]=length(which(ev$HartType=="Mixed"))
-      count[i,j,8]=length(which(ev$MaxMeanRain250>=6))
-      count[i,j,9]=length(which(ev$MaxMeanRain250>=12))
-      count[i,j,10]=length(which(ev$MaxPointRain250>=50))
-      count[i,j,11]=length(which(ev$MaxMeanWind250>=13.9))
-      count[i,j,12]=length(which(ev$MaxPointWind250>=22.2))
+      count[i,j,5]=length(which(ev$EnteredFormed!=1))      
+      count[i,j,6]=length(which(ev$HartType=="EC"))
+      count[i,j,7]=length(which(ev$HartType=="SC"))
+      count[i,j,8]=length(which(ev$HartType=="Mixed"))
+      count[i,j,9]=length(which(ev$MaxMeanRain250>=6))
+      count[i,j,10]=length(which(ev$MaxMeanRain250>=12))
+      count[i,j,11]=length(which(ev$MaxPointRain250>=50))
+      count[i,j,12]=length(which(ev$MaxMeanWind250>=13.9))
+      count[i,j,13]=length(which(ev$MaxPointWind250>=22.2))
   }
 count[,2,]/count[,1,]
 

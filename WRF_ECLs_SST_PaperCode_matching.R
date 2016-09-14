@@ -199,7 +199,7 @@ for(n in 1:6)
     for(x in 1:3) matchtypes[n,i,x+1]=length(which(match[[n]][I,1,x]>0))
   }
 
-####### Figure 4
+####### Figure 5
 ### Histogram of matched/unmatched events
 
 cvthresh=seq(1,4,0.25)
