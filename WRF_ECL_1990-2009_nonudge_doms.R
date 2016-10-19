@@ -25,18 +25,34 @@ for(n in 1:6)
   fixes[[n]]$Date2=as.POSIXct(paste(as.character(fixes[[n]]$Date),substr(fixes[[n]]$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
 }
 
+n=7
+events[[n]]<-read.csv("outputUM_erai_150_topo_rad2_proj100/ECLevents_umelb_erai_150_topo_rad2_proj100_update.csv")
+events[[n]]$Year=floor(events[[n]]$Date1/10000)
+events[[n]]$Month=floor(events[[n]]$Date1/100)%%100
+events[[n]][events[[n]]==-Inf]=NaN
+events[[n]]<-events[[n]][events[[n]]$Year>=1990 & events[[n]]$Year<=2009,]
+
+fixes[[n]]<-read.csv("outputUM_erai_150_topo_rad2_proj100/ECLfixes_umelb_erai_150_topo_rad2_proj100_update.csv")
+fixes[[n]]$Year=floor(fixes[[n]]$Date/10000)
+fixes[[n]]$Month=floor(fixes[[n]]$Date/100)%%100
+fixes[[n]]$Date2=as.POSIXct(paste(as.character(fixes[[n]]$Date),substr(fixes[[n]]$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
+fixes[[n]]<-fixes[[n]][fixes[[n]]$Year>=1990 & fixes[[n]]$Year<=2009,]
+
+
 years=1990:2009
 count=matrix(NaN,20,6)
+cvthresh=1
 
 for(i in 1:20)
   for(j in 1:6)
   {
-    I=which(events[[j]]$Year==years[i])
+    I=which(events[[j]]$Year==years[i] & events[[j]]$CV2>=cvthresh)
     count[i,j]=length(I)
   }
 
 apply(count,2,mean,na.rm=T)
-t.test(count[,1],count[,2])
+t.test(count[,3],count[,2])
+t.test(count[,6],count[,5])
 
 count2=array(NaN,c(20,12,6))
 for(i in 1:20)
@@ -67,7 +83,7 @@ for(i in 1:7){
   a=t.test(count3[,5,i],count3[,6,i])
   sigM[2,i]=a$p.value  
   }
-ks.test(events[[1]]$CV2,events[[2]]$CV2) # Not significantly different
+ks.test(events[[2]]$CV2,events[[3]]$CV2) # Not significantly different
 
 cvthresh=c(seq(1,4,0.5),NaN)
 cvcount=array(0,c(7,6))
@@ -105,6 +121,11 @@ for(i in 1:7){
   sigM[2,i]=a$p.value  
 }
 
+
+##### Events/fixes/near coast
+
+
+
 #### Change vs location
 
 lat=seq(-60,-10,5)
@@ -113,91 +134,102 @@ lon=seq(100,180,5)
 #### Location of ECLs when in the region
 #### Edit slightly - needs to be unique time (in case two low centre same cell, unlikely)
 
-loc<-array(NaN,c(11,17,6,3))
+loc<-array(NaN,c(20,11,17,6,3))
 
+for(y in 1:20)
 for(i in 1:11)
   for(j in 1:17)
     for(k in 1:6)
     {
-      I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Location==1)
-      loc[i,j,k,1]=length(I)/20
-      loc[i,j,k,2]=mean(fixes[[k]]$CV[I],na.rm=T)
+      I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Location==1 & fixes[[k]]$Year==years[y])
+      loc[y,i,j,k,1]=length(I)
+      loc[y,i,j,k,2]=mean(fixes[[k]]$CV[I],na.rm=T)
       
-      I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Fix==1)
-      loc[i,j,k,3]=length(I)/20
+      I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Fix==1 & fixes[[k]]$Year==years[y])
+      loc[y,i,j,k,3]=length(I)
+
     }
 
-### Plot where ECLs are
-pal1 <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
-
-pdf(file=paste(figdir,"ECL_location_d02_NoNudgevNoTopo.pdf",sep=""),width=8.5,height=4)
-bb2=c(-10000,seq(0,20,length.out=11),10000)
-cm=pal1(12)
-layout(cbind(1,2,3),c(1,1,0.3))
-par(mar=c(3,3,3,1))
-image(lon,lat,t(loc[,,5,1]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
-      main="R2 NoNudge",cex.axis=1.5,cex.main=1.5)
-map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
-image(lon,lat,t(loc[,,6,1]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
-      main="R2 NoNudge NoTopo",cex.axis=1.5,cex.main=1.5)
-map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
-ColorBar(bb2,cm)
-dev.off()
-
-
-pdf(file=paste(figdir,"ECL_location_d02_NoTopoChange.pdf",sep=""),width=5,height=4)
+pdf(file=paste(figdir,"ECL_location_d01_NoNudgevNoTopo_Change.pdf",sep=""),width=4.5,height=4)
 bb2=c(-10000,seq(-40,40,10),10000)
 cm=pal(10)
-layout(cbind(1,2),c(1,0.35))
-par(mar=c(2,2,2,0))
-image(lon,lat,t(100*((loc[,,6,1]/loc[,,5,1])-1)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
-      cex.axis=1,cex.main=1)
-map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
-ColorBar(bb2,cm)
-dev.off()
-
-pdf(file=paste(figdir,"ECL_location_d02_NoTopo_CVchange.pdf",sep=""),width=5,height=4)
-bb2=c(-10000,seq(-0.2,0.2,length.out=9),10000)
-cm=pal(10)
-layout(cbind(1,2),c(1,0.35))
-par(mar=c(2,2,2,0))
-image(lon,lat,t(loc[,,6,2]-loc[,,5,2]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
-      cex.axis=1,cex.main=1)
-map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
-ColorBar(bb2,cm)
-dev.off()
-
-pdf(file=paste(figdir,"ECL_location_d02_NoNudgevNoTopo_Genesis.pdf",sep=""),width=7,height=8)
-bb2=c(-10000,seq(0,2.5,length.out=11),10000)
-cm=pal1(12)
-layout(cbind(c(1,2),c(3,3)),width=c(1,0.2))
+layout(cbind(1,2),width=c(1,0.35))
 par(mar=c(3,3,3,1))
-image(lon,lat,t(loc[,,5,3]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
-      main="R2 NoNudge",cex.axis=1.5,cex.main=1.5)
-map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
-image(lon,lat,t(loc[,,6,3]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
-      main="R2 NoNudge NoTopo",cex.axis=1.5,cex.main=1.5)
-map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
+
+tmp=t(100*((apply(loc[,,,3,1],c(2,3),sum)/apply(loc[,,,2,1],c(2,3),sum))-1))
+I=which(t(apply(loc[,,,2,1],c(2,3),mean))<0.5)
+tmp[I]=NaN
+image(lon,lat,tmp,xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(145,161),ylim=c(-42,-23),
+      main="ECL Frequency",cex.axis=1,cex.main=1)
+pval<-matrix(0,length(lon),length(lat))
+for(y in 1:length(lat))
+  for(x in 1:length(lon))
+  {
+    a=t.test(loc[,y,x,3,1],loc[,y,x,2,1])
+    pval[x,y]=a$p.value
+  }
+sigmask=which(pval<=0.05 & !is.na(tmp),arr.ind=T)
+points(lon[sigmask[,1]],lat[sigmask[,2]],col="black",pch=4,lwd=2,cex=2,xlim=c(145,161),ylim=c(-42,-23))
+map(xlim=c(145,161),ylim=c(-42,-23),add=T,lwd=2)
 ColorBar(bb2,cm)
 dev.off()
 
-pdf(file=paste(figdir,"ECL_location_d02_NoNudgevNoTopo_Genesis_change.pdf",sep=""),width=7,height=4)
-bb2=c(-10000,seq(-1,1,length.out=11),10000)
+
+
+
+pdf(file=paste(figdir,"ECL_location_d01_NoNudgevNoTopo_Change_panel.pdf",sep=""),width=9,height=5)
+bb2=c(-10000,seq(-50,50,10),10000)
 cm=pal(12)
-layout(cbind(1,2),c(1,0.2))
-par(mar=c(2,2,2,0))
-image(lon,lat,t(loc[,,6,3]-loc[,,5,3]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
-      cex.axis=1,cex.main=1)
-map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
+layout(cbind(1,2,3),width=c(1,1,0.35))
+par(mar=c(3,3,3,1))
+
+tmp=t(100*((apply(loc[,,,3,1],c(2,3),sum)/apply(loc[,,,2,1],c(2,3),sum))-1))
+I=which(t(apply(loc[,,,2,1],c(2,3),mean))<0.5)
+tmp[I]=NaN
+tmp[which(tmp>=50)]=49
+tmp[which(tmp<=-50)]=-49  
+image(lon,lat,tmp,xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(140,161),ylim=c(-50,-20),
+      main="ECL Frequency",cex.axis=1.5,cex.main=1.5)
+pval<-matrix(0,length(lon),length(lat))
+for(y in 1:length(lat))
+  for(x in 1:length(lon))
+  {
+    a=t.test(loc[,y,x,3,1],loc[,y,x,2,1])
+    pval[x,y]=a$p.value
+  }
+sigmask=which(pval<=0.05 & !is.na(tmp),arr.ind=T)
+points(lon[sigmask[,1]],lat[sigmask[,2]],col="black",pch=4,lwd=2,cex=2,xlim=c(140,161),ylim=c(-50,-20))
+map(xlim=c(140,161),ylim=c(-50,-20),add=T,lwd=2)
+
+tmp=t(100*((apply(loc[,,,3,3],c(2,3),sum)/apply(loc[,,,2,3],c(2,3),sum))-1))
+I=which(t(apply(loc[,,,2,3],c(2,3),mean))<0.2)
+tmp[I]=NaN
+tmp[which(tmp>=50)]=49
+tmp[which(tmp<=-50)]=-49  
+image(lon,lat,tmp,xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(140,161),ylim=c(-50,-20),
+      main="ECL Genesis",cex.axis=1.5,cex.main=1.5)
+pval<-matrix(0,length(lon),length(lat))
+for(y in 1:length(lat))
+  for(x in 1:length(lon))
+  {
+    a=t.test(loc[,y,x,3,3],loc[,y,x,2,3])
+    pval[x,y]=a$p.value
+  }
+sigmask=which(pval<=0.05 & !is.na(tmp),arr.ind=T)
+points(lon[sigmask[,1]],lat[sigmask[,2]],col="black",pch=4,lwd=2,cex=2,xlim=c(140,161),ylim=c(-50,-20))
+map(xlim=c(140,161),ylim=c(-50,-20),add=T,lwd=2)
+
 ColorBar(bb2,cm)
 dev.off()
+
+
 
 
 
 ##### Significant things
 
 count=array(NaN,c(6,13))
-dimnames(count)[[1]]=c("NoNudge d01","NoTopo d01","NoNudge d02","NoTopo d02")
+dimnames(count)[[1]]=c("Nudge d01","NoNudge d01","NoTopo d01","Nudge d02","NoNudge d02","NoTopo d02")
 dimnames(count)[[2]]=c("All","CV>=2","Bombs","Formed in region","Formed elsewhere","EC","SC","Mixed","Mean rain>6 mm/6hr","Mean rain>10 mm/6hr",
                        "Max rain>50 mm/6hr","Mean wind> 50 km/hr","Max wind> 80 km/hr")
 
@@ -205,7 +237,7 @@ for(i in 1:6)
 {
   
   count[i,1]=length(events[[i]]$CV2)
-  count[i,2]=length(which(events[[i]]$CV2>=2))
+  count[i,2]=length(which(events[[i]]$CV2>=2.5))
   count[i,3]=sum(events[[i]]$Bomb)
   count[i,4]=length(which(events[[i]]$EnteredFormed==1))
   count[i,5]=length(which(events[[i]]$EnteredFormed!=1))
@@ -219,9 +251,9 @@ for(i in 1:6)
   count[i,13]=length(which(events[[i]]$MaxPointWind500>=22.2))
 }
 
-count3=array(NaN,c(6,8))
-dimnames(count3)[[1]]=c("R1 d01","R2 d01","R3 d01","R1 d02","R2 d02","R3 d02")
-dimnames(count3)[[2]]=c("All","CV>=2.5","Bombs","Mean rain>6 mm/6hr","Mean rain>9 mm/6hr",
+count3=array(NaN,c(6,10))
+dimnames(count3)[[1]]=c("Nudge d01","NoNudge d01","NoTopo d01","Nudge d02","NoNudge d02","NoTopo d02")
+dimnames(count3)[[2]]=c("All","CV>=2","Bombs","Mean Rain","Max Rain","Mean rain>6 mm/6hr","Mean rain>9 mm/6hr",
                         "Max rain>50 mm/6hr","Mean wind> 40 km/hr","Max wind> 80 km/hr")
 
   for(i in 1:6)
@@ -231,12 +263,30 @@ dimnames(count3)[[2]]=c("All","CV>=2.5","Bombs","Mean rain>6 mm/6hr","Mean rain>
     count3[i,1]=length(ev$CV)
     count3[i,2]=length(which(ev$CV>=2))
     count3[i,3]=length(which(ev$NDR>=1))
-    count3[i,4]=length(which(ev$MeanRain500>=6))
-    count3[i,5]=length(which(ev$MeanRain500>=9))
-    count3[i,6]=length(which(ev$MaxRain500>=50))
-    count3[i,7]=length(which(ev$MeanWind500>=11.1))
-    count3[i,8]=length(which(ev$MaxWind500>=22.2))
+    count3[i,4]=mean(ev$MeanRain500,na.rm=T)
+    count3[i,5]=mean(ev$MaxRain500,na.rm=T)
+    count3[i,6]=length(which(ev$MeanRain500>=6))
+    count3[i,7]=length(which(ev$MeanRain500>=9))
+    count3[i,8]=length(which(ev$MaxRain500>=50))
+    count3[i,9]=length(which(ev$MeanWind500>=11.1))
+    count3[i,10]=length(which(ev$MaxWind500>=22.2))
   }
+
+count4=array(NaN,c(20,6,5))
+dimnames(count4)[[2]]=c("Nudge d01","NoNudge d01","NoTopo d01","Nudge d02","NoNudge d02","NoTopo d02")
+dimnames(count4)[[3]]=c("All","Lat>=33","Lat>=-35","Lat< -35","Lat < -37")
+
+for(y in 1:20)
+for(i in 1:6)
+{
+  ev=fixes[[i]][fixes[[i]]$Location>0 & fixes[[i]]$Year==years[y],] 
+  
+  count4[y,i,1]=length(ev$CV)
+  count4[y,i,2]=length(which(ev$Lat>=-33))
+  count4[y,i,3]=length(which(ev$Lat>=-35))
+  count4[y,i,4]=length(which(ev$Lat<(-35)))
+  count4[y,i,5]=length(which(ev$Lat<(-37)))
+}
 
 
 
@@ -271,20 +321,37 @@ for(i in 1:11)
 
 pal1 <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
 
-library(maps)
-for(i in 1:2)
-{
-  pdf(file=paste(figdir,"ECL_location_",dirs[i],"_ALL2.pdf",sep=""),width=7,height=4)
-  bb2=c(-10000,seq(0,25,length.out=11),10000)
-  cm=pal1(12)
-  layout(cbind(1,2),width=c(1,0.2))
-  par(mar=c(3,3,3,1))
-  image(lon,lat,t(locALL[,,i,1]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
-        main=paste("R2",dirs[i]),cex.axis=1.5,cex.main=1.5)
-  map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
-  ColorBar(bb2,cm)
-  dev.off()
-}
+pdf(file=paste(figdir,"ECL_location_d01_NoNudgevNoTopo_ALL2.pdf",sep=""),width=7,height=8)
+bb2=c(-10000,seq(0,20,length.out=11),10000)
+cm=pal1(12)
+layout(cbind(c(1,2),c(3,3)),width=c(1,0.2))
+par(mar=c(3,3,3,1))
+image(lon,lat,t(apply(locALL[,,,2,1],c(2,3),mean)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
+      main="R2 NoNudge",cex.axis=1.5,cex.main=1.5)
+map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
+image(lon,lat,t(apply(locALL[,,,3,1],c(2,3),mean)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
+      main="R2 NoNudge NoTopo",cex.axis=1.5,cex.main=1.5)
+map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
+ColorBar(bb2,cm)
+dev.off()
+
+
+
+pdf(file=paste(figdir,"ECL_location_d01_NoNudgevNoTopo_Genesis_ALL2.pdf",sep=""),width=7,height=8)
+bb2=c(-10000,seq(0,2.5,length.out=11),10000)
+cm=pal1(12)
+layout(cbind(c(1,2),c(3,3)),width=c(1,0.2))
+par(mar=c(3,3,3,1))
+image(lon,lat,t(apply(locALL[,,,2,2],c(2,3),mean)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
+      main="R2 NoNudge",cex.axis=1.5,cex.main=1.5)
+map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
+image(lon,lat,t(apply(locALL[,,,3,2],c(2,3),mean)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
+      main="R2 NoNudge NoTopo",cex.axis=1.5,cex.main=1.5)
+map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
+ColorBar(bb2,cm)
+dev.off()
+
+
 
 for(i in 1:2)
 {
@@ -415,18 +482,48 @@ for(i in 1:4) print(t.test(count4[,1,i],count4[,2,i]))
 
 #### Repeating that box plot thing
 
-count=array(NaN,c(6,5,4))
+count=array(NaN,c(6,5,5))
 dimnames(count)[[1]]=c("ERA-nudge d01","ERA-nonudge d01","ERA-nonudge_notopo d01","ERA-nudge d02","ERA-nonudge d02","ERA-nonudge_notopo d02")
 cvthresh=c(1,1.5,2,2.5,3)
 dimnames(count)[[2]]=cvthresh
-dimnames(count)[[3]]=c("Events","Fixes","Days","CoastDays")
+dimnames(count)[[3]]=c("Events","Fixes","CoastFixes","Days","CoastDays")
 
 for(i in 1:6)
   for(j in 1:5)
   {
     count[i,j,1]=length(which(events[[i]]$CV2>=cvthresh[j]))
     count[i,j,2]=length(which(fixes[[i]]$Location==1 & fixes[[i]]$CV>=cvthresh[j]))
-    count[i,j,3]=length(unique(fixes[[i]]$Date[fixes[[i]]$Location==1 & fixes[[i]]$CV>=cvthresh[j]]))
-    count[i,j,4]=length(unique(fixes[[i]]$Date[fixes[[i]]$Location2==1 & fixes[[i]]$CV>=cvthresh[j]]))
+    count[i,j,3]=length(which(fixes[[i]]$Location2==1 & fixes[[i]]$CV>=cvthresh[j]))
+    count[i,j,4]=length(unique(fixes[[i]]$Date[fixes[[i]]$Location==1 & fixes[[i]]$CV>=cvthresh[j]]))
+    count[i,j,5]=length(unique(fixes[[i]]$Date[fixes[[i]]$Location2==1 & fixes[[i]]$CV>=cvthresh[j]]))
   }
 
+
+########## Test- matching
+
+for(i in 1:6)
+{
+  match=eventmatch(events[[i]],fixes[[i]],events[[7]],fixes[[7]],F)
+  print(sum(!is.na(match[,6]))/length(match[,6]))
+}
+
+
+#### Another quick thing - Dowdy stuff comparison
+
+wrfdir=c("/srv/ccrc/data34/z3478332/WRF/ERA-nonudge/","/srv/ccrc/data45/z3478332/WRF/output/ERAI_R2_nonudging_notopo/out/impact/")
+GV=matrix(NaN,20*365.25*4,2)
+
+for(n in 1:2)
+{
+tmp=read.csv(paste(wrfdir[n],"GV_6hrly_timeseries.txt",sep=""),header=F) ## Same for d01 or d02, because of region
+len1=dim(GV)[1]
+len2=dim(tmp)[1]
+
+for(i in 5:(len1-4)) {
+  if(len1==len2) j=i else j=len2-len1+i
+  GV[i,n]=mean(tmp[(j-4):(j+4),1])
+}
+}
+
+apply(GV,2,quantile,0.9,na.rm=T)
+makePDF(GV[,1],GV[,2],xlabel="500hPa GV",leg=c("NoNudge","NoNudge_NoTopo"))

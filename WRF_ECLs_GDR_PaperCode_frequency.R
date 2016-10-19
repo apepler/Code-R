@@ -113,6 +113,21 @@ count2=array(NaN,c(12,6,2))
       count2[j,k,2]=length(I)
     }
 
+### Sig CV change?
+
+sigCV<-matrix(0,7,2)
+
+for(i in 1:6)
+  {
+  a=t.test(fixes[[i]]$CV[fixes[[i]]$Location==1],fixes_notopo[[i]]$CV[fixes_notopo[[i]]$Location==1])
+  sigCV[i,1]=a$p.value
+  a=t.test(fixes[[i]]$CV[fixes[[i]]$Location==1 & fixes[[i]]$Lat<=-33 & fixes[[i]]$Lon<=157],
+           fixes_notopo[[i]]$CV[fixes_notopo[[i]]$Location==1 & fixes_notopo[[i]]$Lat<=-33 & fixes_notopo[[i]]$Lon<=157])
+  sigCV[i,2]=a$p.value
+}
+  
+  
+
 
 ##### What about count of Location2 events
 
@@ -121,10 +136,31 @@ colnames(count)=c("Control","NoTopo")
 rownames(count)=c("R1 50km","R1 20km","R1 30km","R1 10km","R2 10km","R3 10km")
 for(i in 1:6)
 {
-  count[i,1]=length(which(events[[i]]$Location2>1))
-  count[i,2]=length(which(events_notopo[[i]]$Location2>1))
+  count[i,1]=length(which(events[[i]]$Location2>=1))
+  count[i,2]=length(which(events_notopo[[i]]$Location2>=1))
 }
 median(count[,2]/count[,1])
+
+count=matrix(NaN,6,2)
+colnames(count)=c("Control","NoTopo")
+rownames(count)=c("R1 50km","R1 20km","R1 30km","R1 10km","R2 10km","R3 10km")
+for(i in 1:6)
+{
+  count[i,1]=length(which(fixes[[i]]$Location2==1 & fixes[[i]]$CV>=2))
+  count[i,2]=length(which(fixes_notopo[[i]]$Location2==1 & fixes_notopo[[i]]$CV>=2))
+}
+median(count[,2]/count[,1])
+
+### Length
+
+len=matrix(0,6,3)
+for(i in 1:6)
+{
+  len[i,1]=mean(events[[i]]$Length2)
+  len[i,2]=mean(events_notopo[[i]]$Length2)
+  a=t.test(events[[i]]$Length2,events_notopo[[i]]$Length2)
+  len[i,3]=a$p.value
+}
 
 ##### No change in overall freq
 
@@ -330,27 +366,30 @@ apply(count2[,2,]/count2[,1,],2,median)
 
 for(i in 1:6) print(makePDF(fixes[[i]]$CV[fixes[[i]]$Location2==1],fixes_notopo[[i]]$CV[fixes_notopo[[i]]$Location2==1]))
 
-count3=array(NaN,c(6,2,8))
+count3=array(NaN,c(6,2,10))
 dimnames(count3)[[1]]=c("R1 d01","R2 d01","R3 d01","R1 d02","R2 d02","R3 d02")
 dimnames(count3)[[2]]=c("Control","NoTopo")
-dimnames(count3)[[3]]=c("All","CV>=2.5","Bombs","Mean rain>6 mm/6hr","Mean rain>9 mm/6hr",
+dimnames(count3)[[3]]=c("All","CV>=2","Bombs","Mean Rain","Max Rain","Mean rain>6 mm/6hr","Mean rain>9 mm/6hr",
                         "Max rain>50 mm/6hr","Mean wind> 40 km/hr","Max wind> 80 km/hr")
 
 for(j in 1:2)
   for(i in 1:6)
   {
-    if(j==1) ev=fixes[[i]][fixes[[i]]$Location2>0,] else if(j==2) ev=fixes_notopo[[i]][fixes_notopo[[i]]$Location2>0,] 
+    if(j==1) ev=fixes[[i]][fixes[[i]]$Location2>0 & fixes[[i]]$CV>2,] else if(j==2) ev=fixes_notopo[[i]][fixes_notopo[[i]]$Location2>0 & fixes_notopo[[i]]$CV>2,] 
 
     count3[i,j,1]=length(ev$CV)
     count3[i,j,2]=length(which(ev$CV>=2))
     count3[i,j,3]=length(which(ev$NDR>=1))
-    count3[i,j,4]=length(which(ev$MeanRain500>=6))
-    count3[i,j,5]=length(which(ev$MeanRain500>=9))
-    count3[i,j,6]=length(which(ev$MaxRain500>=50))
-    count3[i,j,7]=length(which(ev$MeanWind500>=11.1))
-    count3[i,j,8]=length(which(ev$MaxWind500>=22.2))
+    count3[i,j,4]=mean(ev$MeanRain500,na.rm=T)
+    count3[i,j,5]=mean(ev$MaxRain500,na.rm=T)
+    count3[i,j,6]=length(which(ev$MeanRain500>=6))
+    count3[i,j,7]=length(which(ev$MeanRain500>=9))
+    count3[i,j,8]=length(which(ev$MaxRain500>=50))
+    count3[i,j,9]=length(which(ev$MeanWind500>=11.1))
+    count3[i,j,10]=length(which(ev$MaxWind500>=22.2))
   }
 
+apply(count3[,2,]/count3[,1,],2,mean)
 
 ######## Matching
 
@@ -604,6 +643,31 @@ map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
 ColorBar(bb2,cm)
 dev.off()
 
+
+pdf(file=paste(figdir,"ECL_location_freq_CV_PCchange.pdf",sep=""),width=10,height=4)
+bb1=c(-10000,seq(-40,40,10),10000)
+bb2=c(-10000,seq(-0.2,0.2,0.05),10000)
+cm=pal(10)
+layout(cbind(1,3,2,4),c(1,0.35,1,0.35))
+par(mar=c(3,3,3,0))
+image(lon,lat,t(locPC[,,1]),xlab="",ylab="",breaks=bb1,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
+      main=dimnames(loc)[[5]][1],cex.axis=1.5,cex.main=1.5)
+tmp=apply(loc[,,,2,1]/loc[,,,1,1]>1,c(1,2),mean) ## Proportion with a positive change
+sigmask=which(tmp>0.75 | tmp<0.25,arr.ind=T) ## Which have at least 3/4 (~ 5/6) in same direction 
+points(lon[sigmask[,2]],lat[sigmask[,1]],col="black",pch=4,cex=3,lwd=2) ## Add some points
+map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
+
+image(lon,lat,t(loc2[,,2]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
+      main=dimnames(loc)[[5]][2],cex.axis=1.5,cex.main=1.5)
+tmp=apply(loc[,,,2,2]/loc[,,,1,2]>1,c(1,2),mean) ## Proportion with a positive change
+sigmask=which(tmp>0.75 | tmp<0.25,arr.ind=T) ## Which have at least 3/4 (~ 5/6) in same direction 
+points(lon[sigmask[,2]],lat[sigmask[,1]],col="black",pch=4,cex=3,lwd=2) ## Add some points
+map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
+
+ColorBar(bb1,cm)
+ColorBar(bb2,cm,subsampleg = 2)
+dev.off()
+
 ### What is the average intensity anyway?
 pdf(file=paste(figdir,"ECL_location_CV.pdf",sep=""),width=8.5,height=4)
 bb2=c(seq(0.9,1.9,0.1))
@@ -622,7 +686,7 @@ dev.off()
 
 ####### Frequency of all lows vs CV2 lows
 
-loc<-array(NaN,c(11,17,6,2,4))
+loc<-array(NaN,c(11,17,6,4,4))
 cvthresh=c(1,1.5,2,2.5)
 
 for(i in 1:11)

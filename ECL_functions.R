@@ -1,5 +1,7 @@
 ####### This is a collection of functions that are used in analysing ECLs
 
+library(sp)
+
 ## Code to make a colourbar for figures
 ColorBar <- function(brks,cols,vert=T,subsampleg=1)
 {
@@ -137,12 +139,21 @@ CSI_days <- function(fixes1,fixes2,day1=NaN,day2=NaN)
 }
 
 
-fixmatch <- function(fixes1,fixes2,GV=F,timediff=6,dist=500)
+fixmatch <- function(fixes1,fixes2,GV=F,timediff=6,dist=500,rain=F)
 {
     fixes1=fixes1[fixes1$Location==1,]
     
+    if(rain==F)
+    {
     match<-array(NaN,c(length(fixes1$ID),10))
     dimnames(match)[[2]]=c("ID","Fix","Location2","CV","MSLP","GV","MatchHours","CV2","MSLP2","GV2")
+    } else
+    {
+      match<-array(NaN,c(length(fixes1$ID),14))
+      dimnames(match)[[2]]=c("ID","Fix","Location2","CV","MSLP","GV","MatchHours","CV2","MSLP2","GV2",
+                             "MeanRain500","MaxRain500","MeanRain500a","MaxRain500a")
+      match[,11:12]=cbind(fixes1$MeanRain500,fixes1$MaxRain500)
+    }
     match[,1:6]=cbind(fixes1$ID,fixes1$Fix,fixes1$Location2,fixes1$CV,fixes1$MSLP,fixes1$GV)
     
     fixes1$Date2=as.POSIXct(paste(as.character(fixes1$Date),substr(fixes1$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
@@ -158,8 +169,139 @@ fixmatch <- function(fixes1,fixes2,GV=F,timediff=6,dist=500)
         match[i,8]=max(fixes2$CV[I])
         match[i,9]=min(fixes2$MSLP[I])
         match[i,10]=min(fixes2$GV[I])
+        
+        if(rain==T)
+        {
+          match[i,13]=mean(fixes2$MeanRain500[I])
+          match[i,14]=max(fixes2$MaxRain500[I])
+        }
       } else match[i,7]=0
     }
 
   return(match)
 }
+
+
+### Identifies what proportion of events in database 1 are matched by database 2
+eventmatch2 <- function(events1,fixes1,events2,fixes2,GV=F)
+{
+    match<-array(NaN,c(length(events1$ID),6))
+    dimnames(match)[[2]]=c("CV","MSLP","Length","MatchLength","CV2","MSLP2")
+    match[,1]=events1$CV2
+    match[,2]=events1$MSLP2
+    match[,3]=events1$Length2
+    
+    fixes1$Date2=as.POSIXct(paste(as.character(fixes1$Date),substr(fixes1$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
+    fixes2$Date2=as.POSIXct(paste(as.character(fixes2$Date),substr(fixes2$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
+    
+    for(i in 1:length(events1$ID))
+    {
+      tmp=fixes1[(fixes1$ID==events1$ID[i] & fixes1$Location==1),]
+      rn=range(tmp$Date2)
+      
+      I=which(fixes2$Date2<=rn[2]+(60*60*6) & fixes2$Date2>=rn[1]-(60*60*6) & fixes2$Location==1)
+      if(length(I)>0)
+      {
+        tmp2=fixmatch(tmp,fixes2[I,])
+        
+        match[i,4]=length(tmp2[,7]>0) #All events that match
+        match[i,5]=max(tmp2[,8])
+        match[i,6]=min(tmp2[,9])
+      } else match[i,4]=0
+    }
+  
+  return(match)
+}
+
+fixmatch2 <- function(fixes1,fixes2,GV=F,timediff=6,dist=500)
+{
+  L=which(fixes1$Location==1)
+  
+  match<-array(NaN,c(length(fixes1$ID),10))
+  dimnames(match)[[2]]=c("ID","Fix","Location2","CV","MSLP","GV","MatchHours","CV2","MSLP2","GV2")
+  match[,1:6]=cbind(fixes1$ID,fixes1$Fix,fixes1$Location2,fixes1$CV,fixes1$MSLP,fixes1$GV)
+  
+  fixes1$Date2=as.POSIXct(paste(as.character(fixes1$Date),substr(fixes1$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
+  fixes2$Date2=as.POSIXct(paste(as.character(fixes2$Date),substr(fixes2$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
+  
+  for(i in 1:length(L))
+  {
+    tmp=spDistsN1(cbind(fixes2$Lon,fixes2$Lat),c(fixes1$Lon[L[i]],fixes1$Lat[L[i]]),longlat=T)
+    I=which(fixes2$Date2<=fixes1$Date2[L[i]]+(60*60*timediff) & fixes2$Date2>=fixes1$Date2[L[i]]-(60*60*timediff) & tmp<=dist)
+    if(length(I)>0)
+    {
+      match[L[i],7]=length(I) #All events that match
+      match[L[i],8]=max(fixes2$CV[I])
+      match[L[i],9]=min(fixes2$MSLP[I])
+      match[L[i],10]=min(fixes2$GV[I])
+    } else match[L[i],7]=0
+  }
+  
+  return(match)
+}
+
+
+### This version only keeps the closest match - prefers same time
+fixmatch3 <- function(fixes1,fixes2,GV=F,timediff=6,dist=500,rain=F)
+{
+  fixes1=fixes1[fixes1$Location==1,]
+  
+  if(rain==F)
+  {
+    match<-array(NaN,c(length(fixes1$ID),14))
+    dimnames(match)[[2]]=c("ID","Fix","Lon","Lat","Location2","CV","MSLP","GV","MatchHours","Lon2","Lat2","CV2","MSLP2","GV2")
+  } else
+  {
+    match<-array(NaN,c(length(fixes1$ID),18))
+    dimnames(match)[[2]]=c("ID","Fix","Lon","Lat","Location2","CV","MSLP","GV","MatchHours","Lon2","Lat2","CV2","MSLP2","GV2",
+                           "MeanRain500","MaxRain500","MeanRain500a","MaxRain500a")
+    match[,15:16]=cbind(fixes1$MeanRain500,fixes1$MaxRain500)
+  }
+  match[,1:8]=cbind(fixes1$ID,fixes1$Fix,fixes1$Lon,fixes1$Lat,fixes1$Location2,fixes1$CV,fixes1$MSLP,fixes1$GV)
+  
+  fixes1$Date2=as.POSIXct(paste(as.character(fixes1$Date),substr(fixes1$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
+  fixes2$Date2=as.POSIXct(paste(as.character(fixes2$Date),substr(fixes2$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
+  
+  for(i in 1:length(fixes1$ID))
+  {
+    tmp=spDistsN1(cbind(fixes2$Lon,fixes2$Lat),c(fixes1$Lon[i],fixes1$Lat[i]),longlat=T)
+    I=which(fixes2$Date2<=fixes1$Date2[i]+(60*60*timediff) & fixes2$Date2>=fixes1$Date2[i]-(60*60*timediff) & tmp<=dist)
+    
+    ###Restrict to the closest one
+    if(length(I)>1) 
+      {
+      I2=which(fixes2$Date2==fixes1$Date2[i] & tmp<=dist)
+      
+      if(length(I2)==1) I=I2
+      if(length(I2)==0)
+      {
+        I3=which(fixes2$Date2<=fixes1$Date2[i]+(60*60*timediff) & fixes2$Date2>=fixes1$Date2[i]-(60*60*timediff) & tmp==min(tmp[I]))
+        I=I3[1]
+      }
+      if(length(I2)>1)
+      {
+        I3=which(fixes2$Date2==fixes1$Date2[i] & tmp==min(tmp[I]))
+        I=I3[1]
+      }
+    }
+    
+    match[i,9]=length(I) #All events that match
+    if(length(I)>0)
+    {
+      match[i,10]=fixes2$Lon[I]
+      match[i,11]=fixes2$Lat[I]
+      match[i,12]=fixes2$CV[I]
+      match[i,13]=fixes2$MSLP[I]
+      if(dim(fixes2)[2]>25) match[i,14]=fixes2$GV[I]
+      
+      if(rain==T)
+      {
+        match[i,17]=fixes2$MeanRain500[I]
+        match[i,18]=fixes2$MaxRain500[I]
+      }
+    } 
+  }
+  
+  return(match)
+}
+

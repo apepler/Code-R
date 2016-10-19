@@ -72,18 +72,19 @@ lon=seq(100,180,5)
 #### Location of ECLs when in the region
 #### Edit slightly - needs to be unique time (in case two low centre same cell, unlikely)
 
-loc<-array(NaN,c(11,17,4,3))
+loc<-array(NaN,c(20,11,17,4,3))
 
+for(y in 1:20)
 for(i in 1:11)
   for(j in 1:17)
     for(k in 1:4)
     {
-      I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Location==1)
-      loc[i,j,k,1]=length(I)/20
-      loc[i,j,k,2]=mean(fixes[[k]]$CV[I],na.rm=T)
+      I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Location==1 & fixes[[k]]$Year==years[y])
+      loc[y,i,j,k,1]=length(I)
+      loc[y,i,j,k,2]=mean(fixes[[k]]$CV[I],na.rm=T)
       
-      I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Fix==1)
-      loc[i,j,k,3]=length(I)/20
+      I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Fix==1 & fixes[[k]]$Year==years[y])
+      loc[y,i,j,k,3]=length(I)
     }
 
 ### Plot where ECLs are
@@ -94,14 +95,59 @@ bb2=c(-10000,seq(0,2.5,length.out=11),10000)
 cm=pal1(12)
 layout(cbind(c(1,2),c(3,3)),width=c(1,0.2))
 par(mar=c(3,3,3,1))
-image(lon,lat,t(loc[,,2,3]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
+image(lon,lat,t(apply(loc[,,,1,3],c(2,3),mean)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
       main="R2 NoNudge",cex.axis=1.5,cex.main=1.5)
 map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
-image(lon,lat,t(loc[,,1,3]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
+image(lon,lat,t(apply(loc[,,,2,3],c(2,3),mean)),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
       main="R2 NoNudge NoTopo",cex.axis=1.5,cex.main=1.5)
 map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
 ColorBar(bb2,cm)
 dev.off()
+
+pdf(file=paste(figdir,"ECL_location_d01_NoNudgevNoTopo_Genesis_cv0.5_change.pdf",sep=""),width=7,height=4)
+bb2=c(-10000,seq(-1,1,length.out=11),10000)
+cm=pal(12)
+layout(cbind(1,2),c(1,0.2))
+par(mar=c(2,2,2,0))
+image(lon,lat,t(loc[,,2,3]-loc[,,1,3]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
+      cex.axis=1,cex.main=1)
+map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
+ColorBar(bb2,cm)
+dev.off()
+
+pal1 <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
+
+pdf(file=paste(figdir,"ECL_location_d01_NoNudgevNoTopo_Genesis_cv0.5_panel.pdf",sep=""),width=14,height=4)
+bb1=c(-10000,seq(0,2.5,length.out=11),10000)
+cm1=pal1(12)
+layout(cbind(1,3,2,4),width=c(1,0.2,1,0.2))
+par(mar=c(3,3,3,1))
+image(lon,lat,t(apply(loc[,,,1,3],c(2,3),mean)),xlab="",ylab="",breaks=bb1,col=cm1,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
+      main="R2 NoNudge Cyclogenesis",cex.axis=1.5,cex.main=1.5)
+map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
+
+bb2=c(-10000,seq(-0.5,0.5,length.out=11),10000)
+cm2=pal(12)
+tmp=t(apply(loc[,,,2,3],c(2,3),mean)-apply(loc[,,,1,3],c(2,3),mean))
+I=which(t(apply(loc[,,,1,3],c(2,3),mean))<0.25)
+tmp[I]=NaN
+image(lon,lat,tmp,xlab="",ylab="",breaks=bb2,col=cm2,zlim=c(-Inf,Inf),xlim=c(110,175),ylim=c(-45,-10),
+      main="Change - NoTopography",cex.axis=1.5,cex.main=1.5)
+pval<-matrix(0,length(lon),length(lat))
+for(y in 1:length(lat))
+  for(x in 1:length(lon))
+  {
+    a=t.test(loc[,y,x,2,1],loc[,y,x,1,1])
+    pval[x,y]=a$p.value
+  }
+sigmask=which(pval<=0.05 & !is.na(tmp),arr.ind=T)
+points(lon[sigmask[,1]],lat[sigmask[,2]],col="black",pch=4,lwd=2,cex=2,xlim=c(110,175),ylim=c(-45,-10))
+map(xlim=c(110,175),ylim=c(-45,-10),add=T,lwd=2)
+
+ColorBar(bb1,cm1)
+ColorBar(bb2,cm2)
+dev.off()
+
 
 ####### Significance
 

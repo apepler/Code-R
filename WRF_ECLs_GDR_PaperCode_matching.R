@@ -108,7 +108,6 @@ for(n in 1:6)
   slp[[n]]=cbind(events[[n]]$MSLP2,match[[n]][,8])
   len[[n]]=cbind(events[[n]]$Length2,match[[n]][,9])
   gv[[n]]=cbind(events[[n]]$GV,match[[n]][,10])
-  
   n=n+1
 }
 
@@ -126,6 +125,52 @@ for(n in 1:6)
     comp[n,5]=mean(gv[[n]][,2]-gv[[n]][,1],na.rm=T)
 }
 
+cvthresh=c(1,1.5,2,2.5,5)
+cvchange=array(NaN,c(6,4,3))
+dimnames(cvchange)[[1]]=c("d01 R1","d01 R2","d01 R3",
+                          "d02 R1","d02 R2","d02 R3")
+dimnames(cvchange)[[2]]=cvthresh[1:4]
+dimnames(cvchange)[[3]]=c("Count","NoTopo Match","NoTopo CV change")
+for(n in 1:6)
+  for(j in 1:4)
+  {
+    I=which(cv[[n]][,1]>=cvthresh[j] & cv[[n]][,1]<cvthresh[j+1])
+    cvchange[n,j,1]=length(I)
+    cvchange[n,j,2]=length(which(!is.na(cv[[n]][I,2])))
+    cvchange[n,j,3]=mean(cv[[n]][I,2]-cv[[n]][I,1],na.rm=T)
+  }
+
+for(n in 1:6) print(cor(cv[[n]][,2]-cv[[n]][,1],cv[[n]][,1],use="pairwise.complete.obs"))
+
+boxplot(cvchange[,,3],xlab="Intensity",ylab="Intensity change",ylim=c(-1,0.5))
+abline(h=0,col="red")
+
+
+### Match within 500km
+
+match<-cv<-slp<-len<-gv<-list()
+n=1
+for(n in 1:6)
+{
+  match[[n]]=eventmatch2(events[[n]],fixes[[n]],events_notopo[[n]],fixes_notopo[[n]],F)
+  cv[[n]]=cbind(events[[n]]$CV2,match[[n]][,5])
+  slp[[n]]=cbind(events[[n]]$MSLP2,match[[n]][,6])
+  n=n+1
+}
+
+comp=array(NaN,c(6,5))
+dimnames(comp)[[1]]=c("d01 R1","d01 R2","d01 R3",
+                      "d02 R1","d02 R2","d02 R3")
+dimnames(comp)[[2]]=c("MatchEvents","MatchHours","CV2","MSLP2")
+
+for(n in 1:6)
+{
+  comp[n,1]=length(which(match[[n]][,4]>0))/length(match[[n]][,4])
+  comp[n,2]=mean(match[[n]][,5],na.rm=T)
+  comp[n,3]=mean(cv[[n]][,2]-cv[[n]][,1],na.rm=T)
+  comp[n,4]=mean(slp[[n]][,2]-slp[[n]][,1],na.rm=T)
+}
+
 cvthresh=c(1,2,5)
 cvchange=array(NaN,c(6,2,3))
 dimnames(cvchange)[[2]]=cvthresh[1:2]
@@ -139,18 +184,18 @@ for(n in 1:6)
     cvchange[n,j,3]=mean(cv[[n]][I,2]-cv[[n]][I,1],na.rm=T)
   }
 
-for(n in 1:6) print(cor(cv[[n]][,2]-cv[[n]][,1],cv[[n]][,1],use="pairwise.complete.obs"))
+for(n in 1:6) print(cor(match[[n]][,5]-match[[n]][,1],match[[n]][,1],use="pairwise.complete.obs"))
 
 #### FixMatch
 
-match=list()
+match<-list()
 n=1
-for(n in 1:6) match[[n]]=as.data.frame(fixmatch(fixes[[n]],fixes_notopo[[n]],timediff=1,dist=250))
+for(n in 1:6) match[[n]]=as.data.frame(fixmatch(fixes[[n]],fixes_notopo[[n]],timediff=1,dist=500,rain=T))
 
-comp=array(NaN,c(6,5))
+comp=array(NaN,c(6,7))
 dimnames(comp)[[1]]=c("d01 R1","d01 R2","d01 R3",
                       "d02 R1","d02 R2","d02 R3")
-dimnames(comp)[[2]]=c("MatchHours","MatchEvents","CV2","MSLP2","GV2")
+dimnames(comp)[[2]]=c("MatchHours","MatchEvents","CV2","MSLP2","GV2","MeanR","MaxR")
 
 for(n in 1:6)
 {
@@ -161,8 +206,88 @@ for(n in 1:6)
   comp[n,3]=mean(match[[n]]$CV2-match[[n]]$CV,na.rm=T)
   comp[n,4]=mean(match[[n]]$MSLP2-match[[n]]$MSLP,na.rm=T)
   comp[n,5]=mean(match[[n]]$GV2-match[[n]]$GV,na.rm=T)
+  comp[n,6]=mean(match[[n]][,13]-match[[n]][,11],na.rm=T)
+  comp[n,7]=mean(match[[n]][,14]-match[[n]][,12],na.rm=T)
 }
 
-for(n in 1:6) print(cor(match[[n]]$CV2-match[[n]]$CV,match[[n]]$CV,use="pairwise.complete.obs"))
+cvthresh=c(1,2,5)
+cvchange=array(NaN,c(6,2,5))
+dimnames(cvchange)[[1]]=c("d01 R1","d01 R2","d01 R3",
+                          "d02 R1","d02 R2","d02 R3")
+dimnames(cvchange)[[2]]=cvthresh[1:2]
+dimnames(cvchange)[[3]]=c("Count","NoTopo Match","NoTopo CV change","NoTopo MeanRain change","NoTopo MaxRain Change")
+match<-list()
+for(n in 1:6) match[[n]]=as.data.frame(fixmatch(fixes[[n]][fixes[[n]]$Location2==1,],fixes_notopo[[n]],timediff=1,dist=500,rain=T))
+for(n in 1:6)
+  for(j in 1:2)
+  {
+    I=which(match[[n]]$CV>=cvthresh[j] & match[[n]]$CV<cvthresh[j+1])
+    cvchange[n,j,1]=length(I)
+    cvchange[n,j,2]=length(which(!is.na(match[[n]]$CV[I])))
+    cvchange[n,j,3]=mean(match[[n]]$CV2[I]-match[[n]]$CV[I],na.rm=T)
+    cvchange[n,j,4]=mean(match[[n]][I,13]/match[[n]][I,11],na.rm=T)
+    cvchange[n,j,5]=mean(match[[n]][I,14]/match[[n]][I,12],na.rm=T)
+  }
+
+boxplot(cvchange[,,4],xlab="Intensity",ylab="Intensity change")
+abline(h=0,col="red")
+
+
+
+match2=match[[1]]
+for(i in 2:6) match2=rbind(match2,match[[i]])
+
+cvthresh=c(1,1.5,2,2.5,5)
+cvchange=array(NaN,c(4,4))
+dimnames(cvchange)[[1]]=cvthresh[1:4]
+dimnames(cvchange)[[2]]=c("Count","NoTopo Match","NoTopo CV change","t.test")
+  for(j in 1:4)
+  {
+    I=which(match2[,4]>=cvthresh[j] & match2[,4]<cvthresh[j+1])
+    cvchange[j,1]=length(I)
+    cvchange[j,2]=length(which(!is.na(match2[I,8])))
+    cvchange[j,3]=mean(match2[I,13]/match2[I,11],na.rm=T)
+    a=t.test(match2[I,13],match2[I,11])
+    cvchange[j,4]=a$p.value
+  }
+
+match2$CVd=match2$CV2-match2$CV
+match2$MeanRd=match2[,13]-match2[,11]
+match2$MaxRd=match2[,14]-match2[,12]
+
+I=which(match2$CV<2)
+makePDF(match2$CVd[I],match2$CVd[-I],xlabel="Intensity difference",leg=c("Intensity<2","Intensity>=2"))
+makePDF(match2$MaxRd[I],match2$MaxRd[-I],xlabel="meanRain500 difference",leg=c("Intensity<2","Intensity>=2"))
+
+a=density(match2$CVd,na.rm=T,from=-3,to=3)
+plot(NA,xlim=c(-10,10),ylim=c(0,0.5),ylab="Frequency",xlab="Rain Difference",main="")
+cvthresh=c(1,1.5,2,2.5,5)
+for(j in 1:4)
+{
+  I=which(match2[,4]>=cvthresh[j] & match2[,4]<cvthresh[j+1] & !is.na(match2$MeanRd))
+  a=density(match2$MeanRd[I])
+  lines(a,lwd=4,lty=j,col=j)
+}
+
+legend("topright",c("1 <= Intensity < 1.5","1.5 <= Intensity < 2","2 <= Intensity < 2.5","Intensity >= 2.5"), col=1:4,lty=1:4,lwd=4,cex=1,bty="n")
+
+######## Where are all the cyclones with changes > 0.5?
+
+plot(NA,xlim=c(145,162),ylim=c(-42,-23),xlab="",ylab="")
+map(xlim=c(145,162),ylim=c(-42,-23),lwd=2,add=T,col="gray")
+
+for(j in 1:6)
+{
+  match3=as.data.frame(fixmatch2(fixes[[j]],fixes_notopo[[j]],timediff=1,dist=500))
+  I=which(match3$CV2-match3$CV<=-0.5)
+  J=unique(fixes[[j]]$ID[I])
+  
+  for(k in 1:length(J))
+  {
+    K=which(fixes[[j]]$ID==J[k] & match3$CV2-match3$CV<=-0.5)
+    points(fixes[[j]]$Lon[K[1]],fixes[[j]]$Lat[K[1]],pch=4)
+  }
+
+}
 
 
