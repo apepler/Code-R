@@ -33,9 +33,19 @@ ColorBar <- function(brks,cols,vert=T,subsampleg=1)
   image(1, c(1:length(cols)), t(c(1:length(cols))), axes = FALSE, col = cols, 
         xlab = '', ylab = '')
   box()
-  axis(4, at = seq(0.5, length(brks) - 0.5, subsampleg), tick = TRUE, 
-       labels = brks[seq(1, length(brks), subsampleg)])
+  axis(4, at = seq(1.5, length(brks) - 1.5, subsampleg), tick = TRUE, 
+       labels = brks[seq(2, length(brks)-1, subsampleg)])
 }
+ColorBar2 <- function(brks,cols,vert=T,subsampleg=1)
+{
+  par(mar = c(3, 1, 3, 3), mgp = c(1, 1, 0), las = 1, cex = 1)
+  image(1, c(1:length(cols)), t(c(1:length(cols))), axes = FALSE, col = cols, 
+        xlab = '', ylab = '')
+  box()
+  axis(4, at = seq(0.5, length(brks) - 1.5, subsampleg), tick = TRUE, 
+       labels = brks[seq(1, length(brks)-1, subsampleg)])
+}
+
 
 
 
@@ -173,23 +183,84 @@ ColorBar(seq(-2.5,2.5,0.5),pal(10),subsampleg=1)
 dev.off()
 
 
+figdir="~/Documents/ECLs/WRFruns/0708/NoTopoPaper"
+
 pal <- color.palette(c("red","yellow","white","cyan","blue"), c(20,20,20,20))
 #bb2=c(-100,-4,-3,-2,-1,0,1,2,3,4,100)
-bb2=c(-100,-5,-2,-1,0,1,2,5,100)
-pdf(file=paste(figdir,"/ECL_0708_",dom,"_",cat[c],"_notopo_location2_change.pdf",sep=""),width=9,height=4,pointsize=12)
-layout(cbind(1,2,3,4),width=c(1,0.3,1,0.3))
+bb1=c(-100,seq(-5,5,1),100)
+bb2=c(-100,seq(-2.5,2.5,0.5),100)
+pdf(file=paste(figdir,"/ECL_0708_d02_",cat[c],"_notopo_location2_change.pdf",sep=""),width=9,height=4,pointsize=12)
+layout(cbind(1,3,2,4),width=c(1,0.3,1,0.3))
 par(mar=c(3,3,4,1))
-image(apply(comp_rain[,,,2]-comp_rain[,,,1],c(1,2),mean),breaks=seq(-5,5,1),col=pal(10),main="Rain",axes=F,cex.main=2)
+image(apply(comp_rain_d01[,,,2]-comp_rain_d01[,,,1],c(1,2),mean),breaks=bb1,col=pal(12),main="Rain",axes=F,cex.axis=2)
 points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
-axis(1,at=seq(0,1,0.25),seq(-500,500,250))
-axis(2,at=seq(0,1,0.25),seq(-500,500,250))
-ColorBar(seq(-5,-5,1),pal(10),subsampleg=1)
-image(apply(comp_wind[,,,2]-comp_wind[,,,1],c(1,2),mean),breaks=seq(-2.5,2.5,0.5),col=pal(10),main="Wind",axes=F,cex.main=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+axis(2,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+image(apply(comp_wind_d01[,,,2]-comp_wind_d01[,,,1],c(1,2),mean),breaks=bb2,col=pal(12),main="Wind",axes=F,cex.axis=2)
 points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
-axis(1,at=seq(0,1,0.25),seq(-500,500,250))
-axis(2,at=seq(0,1,0.25),seq(-500,500,250))
-ColorBar(seq(-2.5,2.5,0.5),pal(10),subsampleg=1)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+axis(2,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+
+ColorBar(bb1,pal(12),subsampleg=1)
+ColorBar(bb2,pal(12),subsampleg=1)
 dev.off()
+
+pal1 <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
+pal2 <- color.palette(c("red","yellow","white","cyan","blue"), c(20,20,20,20))
+bb1=c(seq(0,14),100)
+bb2=c(-100,seq(-5,5,1),100)
+pdf(file=paste(figdir,"/ECL_0708_d01_",cat[c],"_notopo_location2_rainchange.pdf",sep=""),width=9,height=4,pointsize=12)
+layout(cbind(1,3,2,4),width=c(1,0.3,1,0.3))
+par(mar=c(3,3,4,1))
+image(apply(comp_rain_d01[,,,1],c(1,2),mean),breaks=bb1,col=pal1(15),main="Mean",axes=F,cex.axis=2)
+box()
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+axis(2,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+image(apply(comp_rain_d01[,,,2]-comp_rain_d01[,,,1],c(1,2),mean),breaks=bb2,col=pal2(12),main="Change",axes=F,cex.axis=2)
+box()
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+axis(2,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+ColorBar2(bb1,pal1(15),subsampleg=2)
+ColorBar(bb2,pal2(12),subsampleg=1)
+dev.off()
+
+bb1=c(seq(0,14),100)
+bb2=c(-500,seq(-50,50,10),500)
+pdf(file=paste(figdir,"/ECL_0708_d02_",cat[c],"_notopo_location2_rainchangePC.pdf",sep=""),width=9,height=4,pointsize=12)
+layout(cbind(1,3,2,4),width=c(1,0.3,1,0.3))
+par(mar=c(3,3,4,1))
+image(apply(comp_rain_d02[,,,1],c(1,2),mean),breaks=bb1,col=pal1(15),main="Mean",axes=F,cex.axis=2)
+box()
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+axis(2,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+image(apply(100*((comp_rain_d02[,,,2]/comp_rain_d02[,,,1])-1),c(1,2),mean),breaks=bb2,col=pal2(12),main="% Change",axes=F,cex.axis=2)
+box()
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+axis(2,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+ColorBar2(bb1,pal1(15),subsampleg=2)
+ColorBar(bb2,pal2(12),subsampleg=1)
+dev.off()
+
+pdf(file=paste(figdir,"/ECL_0708_d02_",cat[c],"_notopo_location2_rain.pdf",sep=""),width=8,height=4,pointsize=12)
+layout(cbind(1,2,3),width=c(1,1,0.3))
+par(mar=c(3,3,4,1))
+image(apply(comp_rain_d02[,,,1],c(1,2),mean),breaks=bb1,col=pal1(15),main="Control",axes=F,cex.axis=2)
+box()
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+axis(2,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+image(apply(comp_rain_d02[,,,2],c(1,2),mean),breaks=bb1,col=pal1(15),main="NoTopo",axes=F,cex.axis=2)
+box()
+points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
+axis(1,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+axis(2,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
+ColorBar2(bb1,pal1(15),subsampleg=2)
+dev.off()
+
 
 
 ######## Loook at rain vs WRF for Control/Notopo

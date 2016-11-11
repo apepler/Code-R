@@ -9,7 +9,7 @@ figdir="~/Documents/ECLs/WRFruns/0708/NoTopoPaper/"
 source("~/Documents/R/ECL_functions.R")
 
 cat=c("rad5_p100","rad5_p240","rad2_p100","rad2_p240","rad2_p100_cv0.5")
-c=3 ## Several different intensity measures were calculated. This is the default.
+c=1 ## Several different intensity measures were calculated. This is the default.
 
 ##########
 ## Step 1: load all the data for my category of choice
@@ -20,7 +20,7 @@ n=1
 for(dom in c("d01","d02"))
   for(r in 1:3)
   {
-    fixes[[n]]=read.csv(paste("ECLfixes_",dom,"_0708_R",r,"_",cat[c],"_typing_impactsC2.csv",sep=""),stringsAsFactors = F)
+    fixes[[n]]=read.csv(paste("ECLfixes_",dom,"_0708_R",r,"_",cat[c],"_typing.csv",sep=""),stringsAsFactors = F)
     fixes[[n]]$Year=floor(fixes[[n]]$Date/10000)
     fixes[[n]]$Month=floor(fixes[[n]]$Date/100)%%100
     fixes[[n]]$Location2<-0
@@ -34,7 +34,7 @@ for(dom in c("d01","d02"))
     fixes[[n]][fixes[[n]]==-Inf]=NaN    
     fixes[[n]][fixes[[n]]==Inf]=NaN  
     
-    events[[n]]=read.csv(paste("ECLevents_",dom,"_0708_R",r,"_",cat[c],"_typing_impactsC2.csv",sep=""),stringsAsFactors = F)
+    events[[n]]=read.csv(paste("ECLevents_",dom,"_0708_R",r,"_",cat[c],"_typing.csv",sep=""),stringsAsFactors = F)
     events[[n]]$Year=floor(events[[n]]$Date1/10000)
     events[[n]]$Month=floor(events[[n]]$Date1/100)%%100
     events[[n]][events[[n]]==-Inf]=NaN    
@@ -46,7 +46,7 @@ for(dom in c("d01","d02"))
     }
     
     
-    fixes_notopo[[n]]=read.csv(paste("ECLfixes_",dom,"_0708_R",r,"_notopo_",cat[c],"_typing_impactsC2.csv",sep=""),stringsAsFactors = F)
+    fixes_notopo[[n]]=read.csv(paste("ECLfixes_",dom,"_0708_R",r,"_notopo_",cat[c],"_typing.csv",sep=""),stringsAsFactors = F)
     fixes_notopo[[n]]$Year=floor(fixes_notopo[[n]]$Date/10000)
     fixes_notopo[[n]]$Month=floor(fixes_notopo[[n]]$Date/100)%%100
     fixes_notopo[[n]]$Location2<-0
@@ -60,7 +60,7 @@ for(dom in c("d01","d02"))
     fixes_notopo[[n]][fixes_notopo[[n]]==-Inf]=NaN    
     fixes_notopo[[n]][fixes_notopo[[n]]==Inf]=NaN  
     
-    events_notopo[[n]]=read.csv(paste("ECLevents_",dom,"_0708_R",r,"_notopo_",cat[c],"_typing_impactsC2.csv",sep=""),stringsAsFactors = F)
+    events_notopo[[n]]=read.csv(paste("ECLevents_",dom,"_0708_R",r,"_notopo_",cat[c],"_typing.csv",sep=""),stringsAsFactors = F)
     events_notopo[[n]]$Year=floor(events_notopo[[n]]$Date1/10000)
     events_notopo[[n]]$Month=floor(events_notopo[[n]]$Date1/100)%%100
     events_notopo[[n]][events_notopo[[n]]==-Inf]=NaN
@@ -90,7 +90,7 @@ dev.off()
 count=array(NaN,c(6,2,5,5))
 dimnames(count)[[1]]=c("R1 50km","R2 50km","R3 50km","R1 10km","R2 10km","R3 10km")
 dimnames(count)[[2]]=c("Control","NoTopo")
-cvthresh=c(1,1.5,2,2.5,3)
+cvthresh=c(0.25,0.4,0.5,0.6,0.8)
 dimnames(count)[[3]]=cvthresh
 dimnames(count)[[4]]=c("Events","Fixes","CoastFixes","Days","CoastDays")
 
@@ -162,8 +162,8 @@ a=count[,,4]/count[,,1]
 
 #### Change in ECL rainfall 
 
-cvthresh1=2
-cvthresh2=Inf
+cvthresh1=1
+cvthresh2=2
 count3=array(NaN,c(6,2,9))
 dimnames(count3)[[1]]=c("R1 d01","R2 d01","R3 d01","R1 d02","R2 d02","R3 d02")
 dimnames(count3)[[2]]=c("Control","NoTopo")
@@ -173,7 +173,7 @@ dimnames(count3)[[3]]=c("Count","Bombs","Mean Rain","Max Rain","Mean rain>6 mm/6
 for(j in 1:2)
   for(i in 1:6)
   {
-    if(j==1) ev=fixes[[i]][fixes[[i]]$Location2>0 & fixes[[i]]$CV>=cvthresh1 & fixes[[i]]$CV<cvthresh2,] else if(j==2) ev=fixes_notopo[[i]][fixes_notopo[[i]]$Location2>0 & fixes_notopo[[i]]$CV>=cvthresh1 & fixes_notopo[[i]]$CV<cvthresh2,] 
+    if(j==1) ev=fixes[[i]][fixes[[i]]$Location>0 & fixes[[i]]$CV>=cvthresh1 & fixes[[i]]$CV<cvthresh2,] else if(j==2) ev=fixes_notopo[[i]][fixes_notopo[[i]]$Location>0 & fixes_notopo[[i]]$CV>=cvthresh1 & fixes_notopo[[i]]$CV<cvthresh2,] 
     
     count3[i,j,1]=length(ev$CV)
     count3[i,j,2]=length(which(ev$NDR>=1))
@@ -189,7 +189,6 @@ for(j in 1:2)
 apply(count3[,1,],2,mean)
 apply(count3[,2,]/count3[,1,],2,mean)
 count3[,2,]/count3[,1,]
-
 ######## Change in ECL locations
 
 lat=seq(-60,-10,5)
@@ -240,31 +239,29 @@ dev.off()
 
 ### Figure 3
 
-pdf(file=paste(figdir,"ECL_location_freq_CV_PCchange.pdf",sep=""),width=8.5,height=4)
+pdf(file=paste(figdir,"ECL_location_freq_CV_PCchange.pdf",sep=""),width=10,height=4)
 bb1=c(-10000,seq(-40,40,10),10000)
 bb2=c(-10000,seq(-0.2,0.2,0.05),10000)
 cm=pal(10)
 layout(cbind(1,3,2,4),c(1,0.35,1,0.35))
 par(mar=c(3,3,3,0))
-image(lon,lat,t(locPC[,,1]),xlab="",ylab="",breaks=bb1,col=cm,zlim=c(-Inf,Inf),xlim=c(145,161),ylim=c(-42,-23),
+image(lon,lat,t(locPC[,,1]),xlab="",ylab="",breaks=bb1,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
       main=dimnames(loc)[[5]][1],cex.axis=1.5,cex.main=1.5)
 tmp=apply(loc[,,,2,1]/loc[,,,1,1]>1,c(1,2),mean) ## Proportion with a positive change
 sigmask=which(tmp>0.75 | tmp<0.25,arr.ind=T) ## Which have at least 3/4 (~ 5/6) in same direction 
 points(lon[sigmask[,2]],lat[sigmask[,1]],col="black",pch=4,cex=3,lwd=2) ## Add some points
 map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
-box()
 
-image(lon,lat,t(loc2[,,2]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(145,161),ylim=c(-42,-23),
+image(lon,lat,t(loc2[,,2]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),
       main=dimnames(loc)[[5]][2],cex.axis=1.5,cex.main=1.5)
 tmp=apply(loc[,,,2,2]/loc[,,,1,2]>1,c(1,2),mean) ## Proportion with a positive change
 sigmask=which(tmp>0.75 | tmp<0.25,arr.ind=T) ## Which have at least 3/4 (~ 5/6) in same direction 
 points(lon[sigmask[,2]],lat[sigmask[,1]],col="black",pch=4,cex=3,lwd=2) ## Add some points
 map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
-box()
+
 ColorBar(bb1,cm)
 ColorBar(bb2,cm,subsampleg = 2)
 dev.off()
-
 
 ####### Matched events
 
@@ -335,29 +332,13 @@ dimnames(comp)[[2]]=c("Matched?","Lon diff","CV diff","MSLP diff","GV diff","Mea
 
 for(n in 1:6)
 {
-  I=which(match[[n]]$Location2==1)
-  comp[n,1]=length(which(match[[n]][I,7]>0))/length(match[[n]][I,1])
-  comp[n,2]=mean(match[[n]]$Lon2[I]-match[[n]]$Lon[I],na.rm=T)
-  comp[n,3]=mean(match[[n]]$CV2[I]-match[[n]]$CV[I],na.rm=T)
-  comp[n,4]=mean(match[[n]]$MSLP2[I]-match[[n]]$MSLP[I],na.rm=T)
-  comp[n,5]=mean(match[[n]]$GV2[I]-match[[n]]$GV[I],na.rm=T)
-  comp[n,6]=mean(match[[n]][I,17]/match[[n]][I,15],na.rm=T)
-  comp[n,7]=mean(match[[n]][I,18]/match[[n]][I,16],na.rm=T)
-}
-
-### Rel between change iin rain & mean rain
-corrain<-matrix(0,6,7)
-colnames(corrain)=c("Rain","CV","MSLP","Longitude","D CV","D MSLP","D Longitude")
-for(n in 1:6)
-{
-  I=which(match[[n]]$Location2==1)
-  corrain[n,1]=cor(match[[n]][I,17]/match[[n]][I,15],match[[n]][I,15],use="pairwise.complete.obs")
-  corrain[n,2]=cor(match[[n]][I,17]/match[[n]][I,15],match[[n]]$CV2[I],use="pairwise.complete.obs")
-  corrain[n,3]=cor(match[[n]][I,17]/match[[n]][I,15],match[[n]]$MSLP2[I],use="pairwise.complete.obs")
-  corrain[n,4]=cor(match[[n]][I,17]/match[[n]][I,15],match[[n]]$Lon2[I],use="pairwise.complete.obs")
-  corrain[n,5]=cor(match[[n]][I,17]/match[[n]][I,15],match[[n]]$CV2[I]-match[[n]]$CV[I],use="pairwise.complete.obs")
-  corrain[n,6]=cor(match[[n]][I,17]/match[[n]][I,15],match[[n]]$MSLP2[I]-match[[n]]$MSLP[I],use="pairwise.complete.obs")
-  corrain[n,7]=cor(match[[n]][I,17]/match[[n]][I,15],match[[n]]$Lon2[I]-match[[n]]$Lon[I],use="pairwise.complete.obs")
+  comp[n,1]=length(which(match[[n]][,7]>0))/length(match[[n]][,1])
+  comp[n,2]=mean(match[[n]]$Lon2-match[[n]]$Lon,na.rm=T)
+  comp[n,3]=mean(match[[n]]$CV2-match[[n]]$CV,na.rm=T)
+  comp[n,4]=mean(match[[n]]$MSLP2-match[[n]]$MSLP,na.rm=T)
+  comp[n,5]=mean(match[[n]]$GV2-match[[n]]$GV,na.rm=T)
+  comp[n,6]=mean(match[[n]][,17]-match[[n]][,15],na.rm=T)
+  comp[n,7]=mean(match[[n]][,18]-match[[n]][,16],na.rm=T)
 }
 
 cvthresh=c(1,1.5,2,2.5,5)
@@ -759,62 +740,4 @@ ColorBar(bb1,cm1)
 ColorBar(bb2,cm2)
 dev.off()
 
-############# Strong ECLs - matchy matchy
 
-daylist=seq(as.Date("2007/1/1"), as.Date("2008/12/31"), "days")
-daylist2=as.numeric(as.character(as.Date(daylist),format="%Y%m%d"))
-daycv<-array(0,c(length(daylist2),6,2))
-for(i in 1:length(daylist))
-  for(j in 1:6)
-  {
-    I=which(fixes[[j]]$Date==daylist2[i] & fixes[[j]]$Location==1)
-    if(length(I)>0) daycv[i,j,1]=max(fixes[[j]]$CV[I])
-    I=which(fixes_notopo[[j]]$Date==daylist2[i] & fixes_notopo[[j]]$Location==1)
-    if(length(I)>0) daycv[i,j,2]=max(fixes_notopo[[j]]$CV[I])
-  }
-
-daycv2=apply(daycv[,4:6,1]>=2,1,sum)
-I=which(daycv2==3)
-daylist2[I]
-
-keydates=c(20070619,20070627,20080518,20081122,20081129)
-for(t in 1:5)
-{
-map(xlim=c(135,180),ylim=c(-45,-20),lwd=2,main=keydates[t])
-box()
-for(i in 1:6)
-{
-  b=fixes[[i]]
-  I=which((b$Date==keydates[t] | b$Date==keydates[t]-1) & b$Location==1)
-  a=unique(b$ID[I])
-  for(j in 1:length(a)) 
-  {
-    c=b[b$ID==a[j],]
-    lines(c$Lon,c$Lat,col="blue",lwd=2)
-  }
-  
-  b=fixes_notopo[[i]]
-  I=which((b$Date==keydates[t] | b$Date==keydates[t]-1) & b$Location==1)
-  a=unique(b$ID[I])
-  for(j in 1:length(a)) 
-  {
-    c=b[b$ID==a[j],]
-    lines(c$Lon,c$Lat,col="red",lwd=2)
-  }
-}
-legend("topright",legend=c("Control","NoTopo"),
-       col=c("blue","red"),lwd=3) 
-}
-
-
-for(i in 1:6)
-{
-  I=which(fixes[[1]]$Date==20070627 & fixes[[1]]$Location==1)
-}
-
-
-dates1=seq.POSIXt(as.POSIXct(paste(as.character(bigdates[n]),0,sep=""),format="%Y%m%d%H",tz="GMT")-4*24*60*60,
-                  as.POSIXct(paste(as.character(bigdates[n]),0,sep=""),format="%Y%m%d%H",tz="GMT")+5*24*60*60,
-                  by=6*60*60)
-
-fixes1<-array()

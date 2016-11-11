@@ -43,7 +43,7 @@ wnames=c("R1","R2","R3",
          "R1_BRAN_noeac","R2_BRAN_noeac","R3_BRAN_noeac",
          "R1_BRAN_2eac","R2_BRAN_2eac","R3_BRAN_2eac")
 
-for(w in 1:12)
+for(w in 1)
       {
   data=read.csv(paste("ECLfixes_",dom,"_0708_",wnames[w],"_",cat,"_typing.csv",sep=""),stringsAsFactors=F)
   events=read.csv(paste("ECLevents_",dom,"_0708_",wnames[w],"_",cat,"_typing.csv",sep=""),stringsAsFactors=F)

@@ -75,12 +75,14 @@ eventmatch <- function(events1,fixes1,events2,fixes2,GV=F)
   }
   } else {
     {
-      match<-array(NaN,c(length(events1$ID),10))
-      dimnames(match)[[2]]=c("CV","MSLP","Length","GV","MatchEvents","MatchHours","CV2","MSLP2","Length2","GV2")
+      match<-array(NaN,c(length(events1$ID),12))
+      dimnames(match)[[2]]=c("CV","MSLP","Length","GV","MatchEvents","MatchHours","CV2","MSLP2","Length2","GV2","Rad","Rad2")
       match[,1]=events1$CV2
       match[,2]=events1$MSLP2
       match[,3]=events1$Length2
       match[,4]=events1$GV
+      match[,11]=events1$Rad2
+      
       
       fixes1$Date2=as.POSIXct(paste(as.character(fixes1$Date),substr(fixes1$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
       fixes2$Date2=as.POSIXct(paste(as.character(fixes2$Date),substr(fixes2$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
@@ -102,6 +104,7 @@ eventmatch <- function(events1,fixes1,events2,fixes2,GV=F)
           match[i,8]=min(events2$MSLP2[K])
           match[i,9]=min(events2$Length2[K])
           match[i,10]=max(events2$GV[K])
+          match[i,12]=mean(events2$Rad2[K])
         } else match[i,4]=0
       }
     }
