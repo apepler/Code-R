@@ -10,6 +10,7 @@ source("~/Documents/R/ECL_functions.R")
 
 cat=c("rad5_p100","rad5_p240","rad2_p100","rad2_p240","rad2_p100_cv0.5")
 c=3 ## Several different intensity measures were calculated. This is the default.
+setEPS()
 
 ##########
 ## Step 1: load all the data for my category of choice
@@ -76,7 +77,7 @@ for(dom in c("d01","d02"))
   }
 
 for(i in 1:6) print(ks.test(fixes[[i]]$Radius[fixes[[i]]$Location==1],fixes_notopo[[i]]$Radius[fixes_notopo[[i]]$Location==1]))
-for(i in 1:6) print(ks.test(events[[i]]$Rad2,events_notopo[[i]]$Rad2))
+for(i in 1:6) print(ks.test(events[[i]]$GV,events_notopo[[i]]$GV))
 
 events1=rbind(events[[4]],events[[5]],events[[6]])
 eventsNT1=rbind(events_notopo[[4]],events_notopo[[5]],events_notopo[[6]])
@@ -84,6 +85,10 @@ eventsNT1=rbind(events_notopo[[4]],events_notopo[[5]],events_notopo[[6]])
 pdf(file=paste(figdir,"ECL_pdf_eventCV_nudge_notopo_d02.pdf",sep=""),width=5,height=4)
 makePDF(events1$CV2,eventsNT1$CV2,leg=c("Nudge","Nudge NoTopo"))
 dev.off()
+
+CVdist<-array(0,c(6,5,2))
+for(i in 1:6) CVdist[i,,1]=quantile(events[[i]]$CV2,c(0.1,0.25,0.5,0.75,0.9),na.rm=T)
+for(i in 1:6) CVdist[i,,2]=quantile(events_notopo[[i]]$CV2,c(0.1,0.25,0.5,0.75,0.9),na.rm=T)
 
 ########## Chanegs in ECL frequency
 
@@ -238,30 +243,21 @@ ColorBar(bb2,cm)
 dev.off()
 
 
-### Figure 3
+### Figure 5
 
-pdf(file=paste(figdir,"ECL_location_freq_CV_PCchange.pdf",sep=""),width=8.5,height=4)
+postscript(file=paste(figdir,"ECL_location_CV_PCchange.eps",sep=""),width=5,height=5)
 bb1=c(-10000,seq(-40,40,10),10000)
 bb2=c(-10000,seq(-0.2,0.2,0.05),10000)
 cm=pal(10)
-layout(cbind(1,3,2,4),c(1,0.35,1,0.35))
+layout(cbind(1,2),c(1,0.35))
 par(mar=c(3,3,3,0))
-image(lon,lat,t(locPC[,,1]),xlab="",ylab="",breaks=bb1,col=cm,zlim=c(-Inf,Inf),xlim=c(145,161),ylim=c(-42,-23),
-      main=dimnames(loc)[[5]][1],cex.axis=1.5,cex.main=1.5)
-tmp=apply(loc[,,,2,1]/loc[,,,1,1]>1,c(1,2),mean) ## Proportion with a positive change
-sigmask=which(tmp>0.75 | tmp<0.25,arr.ind=T) ## Which have at least 3/4 (~ 5/6) in same direction 
-points(lon[sigmask[,2]],lat[sigmask[,1]],col="black",pch=4,cex=3,lwd=2) ## Add some points
-map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
-box()
-
 image(lon,lat,t(loc2[,,2]),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(145,161),ylim=c(-42,-23),
-      main=dimnames(loc)[[5]][2],cex.axis=1.5,cex.main=1.5)
+      main="")
 tmp=apply(loc[,,,2,2]/loc[,,,1,2]>1,c(1,2),mean) ## Proportion with a positive change
 sigmask=which(tmp>0.75 | tmp<0.25,arr.ind=T) ## Which have at least 3/4 (~ 5/6) in same direction 
-points(lon[sigmask[,2]],lat[sigmask[,1]],col="black",pch=4,cex=3,lwd=2) ## Add some points
+points(lon[sigmask[,2]],lat[sigmask[,1]],col="black",pch=4,cex=3,lwd=3) ## Add some points
 map(xlim=c(142.5,162.5),ylim=c(-42.5,-22.5),add=T,lwd=2)
 box()
-ColorBar(bb1,cm)
 ColorBar(bb2,cm,subsampleg = 2)
 dev.off()
 
@@ -299,11 +295,11 @@ for(n in 1:6)
 }
 
 cvthresh=c(1,1.5,2,2.5,5)
-cvchange=array(NaN,c(6,4,4))
+cvchange=array(NaN,c(6,4,5))
 dimnames(cvchange)[[1]]=c("d01 R1","d01 R2","d01 R3",
                           "d02 R1","d02 R2","d02 R3")
 dimnames(cvchange)[[2]]=cvthresh[1:4]
-dimnames(cvchange)[[3]]=c("Count","NoTopo Match","NoTopo CV change","NoTopo Rad change")
+dimnames(cvchange)[[3]]=c("Count","NoTopo Match","NoTopo CV change","NoTopo Rad change","NoTopo GV change")
 for(n in 1:6)
   for(j in 1:4)
   {
@@ -312,13 +308,14 @@ for(n in 1:6)
     cvchange[n,j,2]=length(which(!is.na(cv[[n]][I,2])))
     cvchange[n,j,3]=mean(cv[[n]][I,2]-cv[[n]][I,1],na.rm=T)
     cvchange[n,j,4]=mean(match[[n]][I,12]-match[[n]][I,11],na.rm=T)
+    cvchange[n,j,5]=mean(gv[[n]][I,2]-gv[[n]][I,1],na.rm=T)
   }
 
 for(n in 1:6) print(cor(cv[[n]][,2]-cv[[n]][,1],cv[[n]][,1],use="pairwise.complete.obs"))
 
-### Figure 4 - v1 - Difference in intensity vs intensity for events
+### Figure NA - Difference in intensity vs intensity for events
 
-pdf(file=paste(figdir,"ECL_match_CVchange_vsCV_events.pdf",sep=""),width=4,height=5)
+postscript(file=paste(figdir,"ECL_match_CVchange_vsCV_events.eps",sep=""),width=5,height=5)
 boxplot(cvchange[,,3],xlab="Intensity",ylab="Intensity change",ylim=c(-1,0.5))
 abline(h=0,col="red")
 dev.off()
@@ -817,4 +814,24 @@ dates1=seq.POSIXt(as.POSIXct(paste(as.character(bigdates[n]),0,sep=""),format="%
                   as.POSIXct(paste(as.character(bigdates[n]),0,sep=""),format="%Y%m%d%H",tz="GMT")+5*24*60*60,
                   by=6*60*60)
 
-fixes1<-array()
+### Check Dowdy stuff
+
+GV=matrix(NaN,731*4,6)
+
+for(r in 1:3)
+{
+  tmp=read.csv(paste("/srv/ccrc/data36/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007/out/GV_6hrly_timeseries.txt",sep=""),header=F) ## Same for d01 or d02, because of region
+  len2=dim(tmp)[1]
+  for(i in 5:(len2-4)) GV[i,r]=mean(tmp[(i-4):(i+4),1])
+  
+  tmp=read.csv(paste("/srv/ccrc/data36/z3478332/WRF/output/ERAI_R",r,"_nudging_default_2007_notopo/out/GV_6hrly_timeseries.txt",sep=""),header=F) ## Same for d01 or d02, because of region
+  len2=dim(tmp)[1]
+  for(i in 5:(len2-4)) GV[i,r+3]=mean(tmp[(i-4):(i+4),1])
+}
+
+
+apply(GV,2,mean,na.rm=T)
+for(i in 1:3) print(makePDF(GV[,i],GV[,i+3]))
+
+a=apply(GV,2,quantile,0.95,na.rm=T)
+for(i in 1:3) print(length(which(GV[,i+3]>=a[i]))/length(which(GV[,i]>=a[i])))

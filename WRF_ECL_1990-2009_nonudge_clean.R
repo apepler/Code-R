@@ -50,6 +50,8 @@ fixes[[n]]$Month=floor(fixes[[n]]$Date/100)%%100
 fixes[[n]]$Date2=as.POSIXct(paste(as.character(fixes[[n]]$Date),substr(fixes[[n]]$Time,1,2),sep=""),format="%Y%m%d%H",tz="GMT")
 fixes[[n]]<-fixes[[n]][fixes[[n]]$Year>=1990 & fixes[[n]]$Year<=2009,]
 
+
+
 ##Quick check
 
 years=1990:2009
@@ -89,6 +91,11 @@ count3[1:19,,7]=apply(abind(count2[1:19,11:12,],count2[2:20,1:4,],along=2),c(1,3
 count3[20,,c(5,7)]=NaN
 dimnames(count3)[[3]]=c("Ann","MAM","JJA","SON","DJF","MJJASO","NDJFMA")
 dimnames(count3)[[2]]=c(paste(dirs,dom),"ERAI")
+
+###CV dist
+
+CVdist<-matrix(0,9,5)
+for(i in 1:9) CVdist[i,]=quantile(events[[i]]$CV2,c(0.1,0.25,0.5,0.75,0.9),na.rm=T)
 
 
 ## Significant difference - seasonal
@@ -158,23 +165,23 @@ mcount[,5:7]/mcount[,1:3]
 
 #### Change vs location
 
-lat=seq(-60,-10,5)
-lon=seq(100,180,5)
+lat=seq(-60,-10,2.5)
+lon=seq(100,180,2.5)
 
 #### Location of ECLs when in the region
 
-loc<-array(NaN,c(20,11,17,9))
+loc<-array(NaN,c(20,21,33,9,3))
 
 for(y in 1:20)
-for(i in 1:11)
-  for(j in 1:17)
+for(i in 1:21)
+  for(j in 1:33)
     for(k in 1:9)
     {
-      I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Location==1 & fixes[[k]]$Year==years[y])
+      I=which(fixes[[k]]$Lat>=lat[i]-1.25 & fixes[[k]]$Lat<lat[i]+1.25 & fixes[[k]]$Lon>=lon[j]-1.25 & fixes[[k]]$Lon<lon[j]+1.25 & fixes[[k]]$Location==1 & fixes[[k]]$Year==years[y])
       loc[y,i,j,k,1]=length(I)
       loc[y,i,j,k,2]=mean(fixes[[k]]$CV[I],na.rm=T)
       
-      I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Fix==1 & fixes[[k]]$Year==years[y])
+      I=which(fixes[[k]]$Lat>=lat[i]-1.25 & fixes[[k]]$Lat<lat[i]+1.25 & fixes[[k]]$Lon>=lon[j]-1.25 & fixes[[k]]$Lon<lon[j]+1.25 & fixes[[k]]$Fix==1 & fixes[[k]]$Year==years[y])
       loc[y,i,j,k,3]=length(I)
     }
 
@@ -183,21 +190,70 @@ change=100*((loc[,,,5:7,]/loc[,,,1:3,])-1)
 dimnames(change)[[4]]<-nam<-c("NoNudge_d01","Nudge_d01","NoNudge_d02")
 dimnames(change)[[5]]=c("Count","CV","Genesis","MeanRain")
 
-## Figure 5
+## Figure 2
+setEPS()
+postscript(file=paste(figdir,"ECL_location_average_Panel.eps",sep=""),width=13,height=5,pointsize=12)
+pal1 <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
+bb2=c(-1000,seq(0,5,0.5),10000)
+cm=pal1(12)
+layout(cbind(1,2,3,4),width=c(1,1,1,0.35))
+nam=c("No Nudging","Spectral Nudging","","","","","","","ERA-Interim")
 
-for(i in 1:3)
+for(i in c(9,2,1))
 {
-pdf(file=paste(figdir,"ECL_location_NoTopoChange_",nam[i],".pdf",sep=""),width=4.5,height=4)
+  tmp=apply(loc[,,,i,1],c(2,3),mean)
+  image(lon,lat,t(tmp),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(145,161),ylim=c(-42,-23),
+        main=nam[i],cex.axis=1.5,cex.main=1.5)
+  map(xlim=c(145,161),ylim=c(-42,-23),add=T,lwd=2)
+  box()
+}
+ColorBar(bb2,cm,subsampleg=2)
+dev.off()
+
+### Again
+
+lat=seq(-60,-10,5)
+lon=seq(100,180,5)
+
+#### Location of ECLs when in the region
+
+loc<-array(NaN,c(20,11,17,9,3))
+
+for(y in 1:20)
+  for(i in 1:11)
+    for(j in 1:17)
+      for(k in 1:9)
+      {
+        I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Location==1 & fixes[[k]]$Year==years[y])
+        loc[y,i,j,k,1]=length(I)
+        loc[y,i,j,k,2]=mean(fixes[[k]]$CV[I],na.rm=T)
+        
+        I=which(fixes[[k]]$Lat>=lat[i]-2.5 & fixes[[k]]$Lat<lat[i]+2.5 & fixes[[k]]$Lon>=lon[j]-2.5 & fixes[[k]]$Lon<lon[j]+2.5 & fixes[[k]]$Fix==1 & fixes[[k]]$Year==years[y])
+        loc[y,i,j,k,3]=length(I)
+      }
+
+
+change=100*((loc[,,,5:7,]/loc[,,,1:3,])-1)
+dimnames(change)[[4]]<-nam<-c("NoNudge_d01","Nudge_d01","NoNudge_d02")
+dimnames(change)[[5]]=c("Count","CV","Genesis","MeanRain")
+
+
+
+## Figure 4
+setEPS()
+postscript(file=paste(figdir,"ECL_location_NoTopoChange_Panel.eps",sep=""),width=9,height=5,pointsize=12)
 bb2=c(-10000,seq(-40,40,10),10000)
 cm=pal(10)
-layout(cbind(1,2),width=c(1,0.35))
-par(mar=c(3,3,3,1))
+layout(cbind(1,2,3),width=c(1,1,0.35))
+nam=c("No Nudging","Spectral Nudging")
 
+for(i in 2:1)
+{
 tmp=t(100*((apply(loc[,,,i+4,1],c(2,3),sum)/apply(loc[,,,i,1],c(2,3),sum))-1))
 I=which(t(apply(loc[,,,i,1],c(2,3),mean))<0.5)
 tmp[I]=NaN
 image(lon,lat,tmp,xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(145,161),ylim=c(-42,-23),
-      main="ECL Frequency",cex.axis=1,cex.main=1)
+      main=nam[i],cex.axis=1.5,cex.main=1.5)
 pval<-matrix(0,length(lon),length(lat))
 for(y in 1:length(lat))
   for(x in 1:length(lon))
@@ -206,12 +262,14 @@ for(y in 1:length(lat))
     pval[x,y]=a$p.value
   }
 sigmask=which(pval<=0.05 & !is.na(tmp),arr.ind=T)
-points(lon[sigmask[,1]],lat[sigmask[,2]],col="black",pch=4,lwd=2,cex=2,xlim=c(145,161),ylim=c(-42,-23))
+points(lon[sigmask[,1]],lat[sigmask[,2]],col="black",pch=4,lwd=3,cex=4.5,xlim=c(145,161),ylim=c(-42,-23))
 map(xlim=c(145,161),ylim=c(-42,-23),add=T,lwd=2)
 box()
+}
 ColorBar(bb2,cm)
 dev.off()
-}
+
+
 
 ### Change in rainfall
 
@@ -256,6 +314,29 @@ for(i in 1:2)
   ColorBar(bb2,cm)
   dev.off()
 }
+
+### Figure 9
+setEPS()
+postscript(file=paste(figdir,"ECL_location_NoTopoChange_Panel_rain.eps",sep=""),width=9,height=5,pointsize=12)
+bb2=c(-10000,seq(-20,20,5),10000)
+cm=pal(10)
+layout(cbind(1,2,3),width=c(1,1,0.35))
+nam=c("No Nudging","Spectral Nudging")
+
+for(i in 2:1)
+{
+  tmp=loc[,,i,4]
+  I=which(loc[,,i,1]<0.5)
+  tmp[I]=NaN
+  image(lon,lat,t(tmp),xlab="",ylab="",breaks=bb2,col=cm,zlim=c(-Inf,Inf),xlim=c(145,161),ylim=c(-42,-23),
+        main=nam[i],cex.axis=1.5,cex.main=1.5)
+  sigmask=which(loc[,,i,5]<=0.05 & !is.na(tmp),arr.ind=T)
+  points(lon[sigmask[,2]],lat[sigmask[,1]],col="black",pch=4,lwd=3,cex=4.5,xlim=c(145,161),ylim=c(-42,-23))
+  map(xlim=c(145,161),ylim=c(-42,-23),add=T,lwd=2)
+  box()
+}
+ColorBar(bb2,cm)
+dev.off()
 
 
 
@@ -476,25 +557,45 @@ for(i in 1:7)
 #### FIXED UP TO HERE
 #### Another quick thing - Dowdy stuff comparison
 
-wrfdir=c("/srv/ccrc/data34/z3478332/WRF/ERA-nonudge/","/srv/ccrc/data45/z3478332/WRF/output/ERAI_R2_nonudging_notopo/out/impact/")
-GV=matrix(NaN,20*365.25*4,2)
+wrfdir=c("/srv/ccrc/data34/z3478332/WRF/ERA-nonudge/","/srv/ccrc/data34/z3478332/WRF/ERA-nudge/",
+       "/srv/ccrc/data45/z3478332/WRF/output/ERAI_R2_nonudging_notopo/out/impact/",
+       "/srv/ccrc/data34/z3478332/WRF/output/ERAI_R2_nudging_notopo_19902009/out/impact/")
+startyear=c(1990,1979,1989,1989)
+startind<-endind<-rep(0,4)
 
-for(n in 1:2)
+for(n in 1:4)
+{
+  a=difftime( as.Date("1990-01-01") , as.Date(paste(startyear[n],"-01-01",sep="")))
+  startind[n]=as.numeric(a)*4
+  a=difftime( as.Date("2010-01-01") , as.Date(paste(startyear[n],"-01-01",sep="")))
+  endind[n]=as.numeric(a)*4
+}
+
+GV=matrix(NaN,20*365.25*4,4)
+
+for(n in 1:4)
 {
 tmp=read.csv(paste(wrfdir[n],"GV_6hrly_timeseries.txt",sep=""),header=F) ## Same for d01 or d02, because of region
 len1=dim(GV)[1]
 len2=dim(tmp)[1]
 
 for(i in 5:(len1-4)) {
-  if(len1==len2) j=i else j=len2-len1+i
+  j=i+startind[n]
   GV[i,n]=mean(tmp[(j-4):(j+4),1])
 }
 }
 
+
 apply(GV,2,quantile,0.9,na.rm=T)
 
+length(which(GV[,2]>=quantile(GV[,2],0.99,na.rm=T)))/80
 
-makePDF(GV[,1],GV[,2],xlabel="500hPa GV",leg=c("NoNudge","NoNudge_NoTopo"))
+
+
+ks.test(GV[,2],GV[,4])
+
+
+makePDF(GV[,1],GV[,2],xlabel="500hPa GV",leg=c("NoNudge","Nudge"))
 
 ###Change in various types?
 
