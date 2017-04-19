@@ -5,7 +5,11 @@ setwd("/srv/ccrc/data34/z3478332/20CR/ECLs/")
 load("20CR_ECLdates_v3.RData")
 load("20CR_ECLdates_ens.RData")
 
-## Decadal distribution of # ECLs/day
+## Decadal digdi=gdi[gdi$Year>=1915 & gdi$Year<=2012,]
+indices[,1:3,3]=cbind(apply(gdi[,4:6],1,sum),
+                      apply(gdi[,7:9],1,sum),
+                      apply(gdi[,10:12],1,sum))
+indices[1:97,4,3]=apply(cbind(gdi[1:97,13],gdi[2:98,2:3]),1,sum)ibution of # ECLs/day
 
 yy=floor(dates2[,1]/10000)
 decadalfreq2=matrix(0,14,6)
@@ -368,7 +372,7 @@ for(t in 1:4)
 
 ########## v2c
 
-ann_v2c<-read.csv("/srv/ccrc/data34/z3478332/20CR/ECLs/LAP_AnnualFreq_20CR_v2c.csv")
+ann_v2c<-read.csv("/srv/ccrc/data34/z3478332/20CR/ECLs/LAP_AnnualFreq_20CR_v2c_thresh2.csv")
 
 decades2=seq(1851,2011,10)
 decadalfreq_v2c=matrix(0,length(decades2),58)
@@ -380,9 +384,9 @@ for(i in 1:length(decades2))
 }
 
 pdf(file="Boxplot_decadal_vmeanERAI_v2c.pdf",height=4,width=7)
-boxplot(t(decadalfreq_v2c[1:16,1:56]),ylim=c(0,250),axes=F,bty="o",col="gray",xlab="Decade",ylab="Count of ECLs")
+boxplot(t(decadalfreq_v2c[1:16,1:56]),ylim=c(0,50),axes=F,bty="o",col="gray",xlab="Decade",ylab="Count of ECLs")
 points(1:16,decadalfreq_v2c[1:16,58],pch=4,cex=1,lwd=3)
-axis(2,at=seq(-50,250,50),cex.axis=0.7)
+axis(2,at=seq(-10,50,10),cex.axis=0.7)
 axis(1,at=seq(-0.5,16.5,1),labels=c(NA,decades2),cex.axis=0.7)
 points(14:16,umdec[12:14],pch=17,col="grey")
 dev.off()
@@ -391,3 +395,127 @@ dev.off()
 I=which(years2>=1979 & years2<2012)
 J=which(ann_v2c[,1]>=1979 & ann_v2c[,1]<2012)
 cor(apply(annfreq[I,1:56],1,mean),ann_v2c[J,58])
+
+#### Do some correlations yay
+
+yy=floor(dates[,1]/10000)
+mm=floor(dates[,1]/100)%%100
+
+yy2=unique(yy)
+monfreq<-array(0,c(length(yy2),12,57))
+
+for(y in 1:length(yy2))
+  for(m in 1:12)
+  {
+    I=which(yy==yy2[y] & mm==m)
+    monfreq[y,m,1:56]=apply(dates[I,2:57],2,sum)
+  }
+
+monfreq[,,57]=apply(monfreq[,,1:56],c(1,2),mean)
+
+library(abind)
+seasfreq=abind(apply(monfreq[,3:5,],c(1,3),sum),
+               apply(monfreq[,6:8,],c(1,3),sum),
+               apply(monfreq[,9:11,],c(1,3),sum),
+               apply(monfreq[,c(12,1:2),],c(1,3),sum),
+               along=3)
+
+seasfreq[1:141,,4]=apply(abind(monfreq[1:141,12,],monfreq[2:142,1:2,],along=2),c(1,3),sum)
+seasfreq[142,,4]=NaN
+seasfreq[,57,]=apply(seasfreq[,1:56,],c(1,3),mean)
+
+####
+##Okay, first: ENSO relationship
+enso=read.table("~/Documents/Timeseries/enso.txt",header=T)
+enso=enso[enso$Year>=1915,]
+seasfreq2=seasfreq[yy2>=1915,,]
+tmp=matrix(0,98,57)
+tmp[1:97,]=seasfreq2[2:98,,1]
+seasfreq2=abind(seasfreq2,tmp,along=3)
+
+Ensofreq<-array(0,c(4,57,5))
+dimnames(Ensofreq)[[1]]=c("EN","N","LN","Ave")
+dimnames(Ensofreq)[[3]]=c("MAM","JJA","SON","DJF","MAM+1")
+
+I=which(enso[,2]=="EN")
+Ensofreq[1,,]=apply(seasfreq2[I,,],c(2,3),mean,na.rm=T)
+I=which(enso[,2]=="A")
+Ensofreq[2,,]=apply(seasfreq2[I,,],c(2,3),mean,na.rm=T)
+I=which(enso[,2]=="LN")
+Ensofreq[3,,]=apply(seasfreq2[I,,],c(2,3),mean,na.rm=T)
+Ensofreq[4,,]=apply(seasfreq2,c(2,3),mean,na.rm=T)
+
+I=which(enso[,2]=="LN")
+J=which(enso[,2]=="A")
+for(i in 1:5) print(t.test(seasfreq2[I,57,i],seasfreq2[J,57,i]))
+
+##### What about correlations with GDR, STRI/P, SAM, SOI
+
+gdi=read.table("~/Documents/Timeseries/gdi.txt",header=T)
+stri=read.table("~/Documents/Timeseries/stri.txt",header=T)
+strp=read.table("~/Documents/Timeseries/strl.txt",header=T)
+soi=read.table("~/Documents/Timeseries/soi.txt",header=T)
+sam=read.csv("~/Documents/Timeseries/marshallsam.csv",header=T)
+
+indices<-array(NaN,c(98,4,5))
+dimnames(indices)[[2]]=c("MAM","JJA","SON","DJF")
+dimnames(indices)[[3]]=c("SOI","SAM","GDI","STRI","STRP")
+
+soi=soi[soi$Year>=1915 & soi$Year<=2012,]
+indices[,1:3,1]=cbind(apply(soi[,4:6],1,sum),
+               apply(soi[,7:9],1,sum),
+               apply(soi[,10:12],1,sum))
+indices[1:97,4,1]=apply(cbind(soi[1:97,13],soi[2:98,2:3]),1,sum)
+
+gdi=gdi[gdi$Year>=1915 & gdi$Year<=2012,]
+indices[,1:3,3]=cbind(apply(gdi[,4:6],1,sum),
+                      apply(gdi[,7:9],1,sum),
+                      apply(gdi[,10:12],1,sum))
+indices[1:97,4,3]=apply(cbind(gdi[1:97,13],gdi[2:98,2:3]),1,sum)
+
+stri=stri[stri$Year>=1915 & stri$Year<=2012,]
+indices[1:95,1:3,4]=cbind(apply(stri[,4:6],1,sum),
+                      apply(stri[,7:9],1,sum),
+                      apply(stri[,10:12],1,sum))
+indices[1:94,4,4]=apply(cbind(stri[1:94,13],stri[2:95,2:3]),1,sum)
+
+strp=strp[strp$Year>=1915 & strp$Year<=2012,]
+indices[1:95,1:3,5]=cbind(apply(strp[,4:6],1,sum),
+                      apply(strp[,7:9],1,sum),
+                      apply(strp[,10:12],1,sum))
+indices[1:94,4,5]=apply(cbind(strp[1:94,13],strp[2:95,2:3]),1,sum)
+
+sam=sam[sam$Year>=1915 & sam$Year<=2012,]
+indices[43:98,1:3,2]=cbind(apply(sam[,4:6],1,sum),
+                      apply(sam[,7:9],1,sum),
+                      apply(sam[,10:12],1,sum))
+indices[43:97,4,2]=apply(cbind(sam[1:55,13],sam[2:56,2:3]),1,sum)
+
+
+indexcorrs<-array(0,c(57,4,5))
+dimnames(indexcorrs)[[2]]=c("MAM","JJA","SON","DJF")
+dimnames(indexcorrs)[[3]]=c("SOI","SAM","GDI","STRI","STRP")
+
+for(i in 1:57)
+  for(j in 1:4)
+    for(k in 1:5)
+      indexcorrs[i,j,k]=cor(seasfreq2[,i,j],indices[,j,k],use="pairwise.complete.obs")
+
+## Pretty boxplot for STRI & GDI
+library(ggplot2)
+library(reshape2)
+names(dimnames(indexcorrs))=c("Corrs","Season","Index")
+data2=melt(indexcorrs[,,3:4])
+
+pdf("Correlation_20CR_ECLs_STRI_GDI_1915_2012.pdf",width=5,height=6,pointsize=16)
+print(ggplot(data2, aes(x = Season, y = value, fill = Index)) +
+        geom_boxplot() +
+        scale_fill_manual(values = c(rgb(0,0,1,1/4),rgb(1,0,0,1/4))) + 
+        scale_y_continuous() +
+        theme_bw() + ylab("Correlation with ECL frequency") + xlab("") +  
+        geom_hline(yintercept = -0.2) + geom_hline(yintercept = 0.2))
+dev.off()
+
+
+
+

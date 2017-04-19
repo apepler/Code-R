@@ -19,6 +19,9 @@ cat2="rad2_p100_cv1.0"
 events<-fixes<-list()
 comp_rain_d01<-comp_wind_d01<-array(0,c(21,21,4,2))
 comp_rain_d02<-comp_wind_d02<-array(0,c(101,101,4,2))
+
+ECLrain<-ECLwind<-list()
+
 tlist=c("ERA-nonudge","ERA-nonudge_notopo","ERA-nudge","ERA-nudge_notopo")
 dirs=c("/srv/ccrc/data34/z3478332/WRF/ERA-nonudge/","/srv/ccrc/data45/z3478332/WRF/output/ERAI_R2_nonudging_notopo/out/impact/",
        "/srv/ccrc/data34/z3478332/WRF/ERA-nudge/","/srv/ccrc/data34/z3478332/WRF/output/ERAI_R2_nudging_notopo_19902009/out/impact/")
@@ -68,27 +71,27 @@ for(dom in c("d01","d02"))
       ### Rain stuff
       
       a=open.nc(paste(dirs[r],"ECLrain_",tlist[r],"_",dom,"_",cat2,"_centred",end2[r],".nc",sep=""))
-      tmp1=var.get.nc(a,"ECLrain")
+      ECLrain[[n]]<-var.get.nc(a,"ECLrain")
       a=open.nc(paste(dirs[r],"ECLwind_",tlist[r],"_",dom,"_",cat2,end2[r],".nc",sep=""))
-      tmp2=var.get.nc(a,"ECL_WS10")
+      ECLwind[[n]]<-var.get.nc(a,"ECL_WS10")
       
       if(dom=="d01")
       {
         I=which(fixes[[n]]$Location==1)
-        comp_rain_d01[,,r,1]=apply(tmp1[,,I],c(1,2),mean,na.rm=T)
-        comp_wind_d01[,,r,1]=apply(tmp2[,,I],c(1,2),mean,na.rm=T)
+        comp_rain_d01[,,r,1]=apply(ECLrain[[n]][,,I],c(1,2),mean,na.rm=T)
+        comp_wind_d01[,,r,1]=apply(ECLwind[[n]][,,I],c(1,2),mean,na.rm=T)
         
         I=which(fixes[[n]]$Location2==1)
-        comp_rain_d01[,,r,2]=apply(tmp1[,,I],c(1,2),mean,na.rm=T)
-        comp_wind_d01[,,r,2]=apply(tmp2[,,I],c(1,2),mean,na.rm=T)
+        comp_rain_d01[,,r,2]=apply(ECLrain[[n]][,,I],c(1,2),mean,na.rm=T)
+        comp_wind_d01[,,r,2]=apply(ECLwind[[n]][,,I],c(1,2),mean,na.rm=T)
       } else if(r<=2) {
         I=which(fixes[[n]]$Location==1)
-        comp_rain_d02[,,r,1]=apply(tmp1[,,I],c(1,2),mean,na.rm=T)
-        comp_wind_d02[,,r,1]=apply(tmp2[,,I],c(1,2),mean,na.rm=T)
+        comp_rain_d02[,,r,1]=apply(ECLrain[[n]][,,I],c(1,2),mean,na.rm=T)
+        comp_wind_d02[,,r,1]=apply(ECLwind[[n]][,,I],c(1,2),mean,na.rm=T)
         
         I=which(fixes[[n]]$Location2==1)
-        comp_rain_d02[,,r,2]=apply(tmp1[,,I],c(1,2),mean,na.rm=T)
-        comp_wind_d02[,,r,2]=apply(tmp2[,,I],c(1,2),mean,na.rm=T)      
+        comp_rain_d02[,,r,2]=apply(ECLrain[[n]][,,I],c(1,2),mean,na.rm=T)
+        comp_wind_d02[,,r,2]=apply(ECLwind[[n]][,,I],c(1,2),mean,na.rm=T)      
         }
       n=n+1     
     }
@@ -107,28 +110,59 @@ axis(2,at=seq(0,1,0.25),seq(-500,500,250))
 ColorBar(c(seq(0,14,1),100),pal(15),subsampleg=2)
 dev.off()
 
-pdf(file=paste(figdir,"ECLrain_composite_NoNudgevNoTopo_Location2a_change_vres.pdf",sep=""),width=12,height=4,pointsize=12)
+pdf(file=paste(figdir,"ECLwind_composite_NoNudgevNoTopo_Location2a_change_vres_sig2.pdf",sep=""),width=12,height=4,pointsize=12)
 layout(cbind(1,2,3,4,5),width=c(1,0.3,1,1,0.3))
 pal1 <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
 pal2 <- color.palette(c("red","yellow","white","cyan","blue"), c(20,20,20,20))
 
 par(mar=c(3,3,4,1), mgp = c(3, 1, 0),cex=1)
-image(comp_rain_d02[,,1,2],breaks=c(seq(0,14,1),100),col=pal1(15),main="Average rainfall",axes=F)
+image(comp_wind_d02[,,1,2],breaks=c(seq(0,14,1),100),col=pal1(15),main="Average windfall",axes=F)
 points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
 axis(1,at=seq(0,1,0.25),seq(-500,500,250))
 axis(2,at=seq(0,1,0.25),seq(-500,500,250))
 
 ColorBar(c(seq(0,14,1),100),pal1(15),subsampleg=2)
 
+sig_d01=matrix(0,21,21)
+for(i in 1:21)
+  for(j in 1:21)
+  {
+    a=t.test(ECLwind[[1]][i,j,fixes[[1]]$Location2==1],ECLwind[[2]][i,j,fixes[[2]]$Location2==1])
+    sig_d01[i,j]=a$p.value
+  }
+
 par(mar=c(3,3,4,1), mgp = c(3, 1, 0),cex=1)
-image(comp_rain_d01[,,2,2]-comp_rain_d01[,,1,2],breaks=c(-5,seq(-3,3.5,0.5)),col=pal2(14),main="50km resolution",axes=F)
+image(comp_wind_d01[,,2,2]-comp_wind_d01[,,1,2],breaks=c(-5,seq(-3,3.5,0.5)),col=pal2(14),main="50km resolution",axes=F)
 points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
 axis(1,at=seq(0,1,0.25),seq(-500,500,250))
 axis(2,at=seq(0,1,0.25),seq(-500,500,250))
-image(comp_rain_d02[,,2,2]-comp_rain_d02[,,1,2],breaks=c(-5,seq(-3,3.5,0.5)),col=pal2(14),main="10km resolution",axes=F)
+# contour(sig_d01<=0.05,add=T,drawlabels=F)
+
+lon<-lat<-seq(0,1,length.out=21)
+sigmask=which(sig_d01<=0.05,arr.ind=T)
+sigmask2=cbind(lon[sigmask[,1]],lat[sigmask[,2]])
+points(lon[sigmask[,1]],lat[sigmask[,2]],col="black",pch=19,cex=0.2)
+
+
+sig_d02=matrix(0,101,101)
+for(i in 1:101)
+  for(j in 1:101)
+  {
+    a=t.test(ECLwind[[3]][i,j,fixes[[3]]$Location2==1],ECLwind[[4]][i,j,fixes[[4]]$Location2==1])
+    sig_d02[i,j]=a$p.value
+  }
+
+image(comp_wind_d02[,,2,2]-comp_wind_d02[,,1,2],breaks=c(-5,seq(-3,3.5,0.5)),col=pal2(14),main="10km resolution",axes=F)
 points(0.5,0.5,pch=4,col="black",lwd=2,cex=2)
 axis(1,at=seq(0,1,0.25),seq(-500,500,250))
 axis(2,at=seq(0,1,0.25),seq(-500,500,250))
+# contour(sig_d02<=0.05,add=T,drawlabels=F)
+lon<-lat<-seq(0,1,length.out=101)
+sigmask=which(sig_d02<=0.05,arr.ind=T)
+sigmask2=cbind(lon[sigmask[,1]],lat[sigmask[,2]])
+
+I=which(sigmask2[,1]%%0.02==0 & sigmask2[,2]%%0.02==0)
+points(lon[sigmask[I,1]],lat[sigmask[I,2]],col="black",pch=19,cex=0.2)
 
 ColorBar(seq(-3.5,3.5,0.5),pal2(14),subsampleg=2)
 dev.off()
@@ -176,31 +210,6 @@ axis(2,at=seq(0,1,0.25),seq(-500,500,250))
 ColorBar(seq(-3.5,3.5,0.5),pal2(14),subsampleg=2)
 dev.off()
 
-
-#Figure8
-setEPS()
-
-pal1 <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
-pal2 <- color.palette(c("red","yellow","white","cyan","blue"), c(20,20,20,20))
-bb1=c(seq(0,14),100)
-bb2=c(-100,seq(-5,5,1),100)
-pal <- color.palette(c("white","cyan","blue","black"), c(20,20,20))
-postscript(file=paste(figdir,"ECLrain_composite_d02_NoNudgevNoTopo_Location2_change.eps",sep=""),width=9,height=4,pointsize=12)
-layout(cbind(1,3,2,4),width=c(1,0.3,1,0.3))
-par(mar=c(3,3,4,1))
-image(comp_rain_d02[,,1,2],breaks=bb1,col=pal1(15),main="Mean rainfall (mm/6hr)",axes=F,cex.main=1.5)
-box()
-points(0.5,0.5,pch=4,col="black",lwd=3,cex=3)
-axis(1,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
-axis(2,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
-image(comp_rain_d02[,,2,2]-comp_rain_d02[,,1,2],breaks=bb2,col=pal2(12),main="Change (mm)",axes=F,cex.main=1.5)
-box()
-points(0.5,0.5,pch=4,col="black",lwd=3,cex=3)
-axis(1,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
-axis(2,at=seq(0,1,0.25),seq(-500,500,250),cex.axis=1.5)
-ColorBar2(bb1,pal1(15),subsampleg=2)
-ColorBar(bb2,pal2(12),subsampleg=1)
-dev.off()
 
 
 

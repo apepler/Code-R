@@ -129,7 +129,7 @@ for(i in 1:5)
 
 library(abind)
 loc2=abind(loc[,,1,1],apply(loc[,,2:5,1],c(1,2),mean,na.rm=T),apply(loc[,,1,2:4],c(1,2),mean),apply(loc[,,2:5,2:4],c(1,2),mean),along=3)
-names=c("NCEP","CMIP","NCEP-WRF","CMIP-WRF")
+names=c("a) NCEP","a) CMIP","b) NCEP-WRF","b) NARCliM")
 
 library(maps)
 ColorBar <- function(brks,cols,labels=NA)
@@ -160,7 +160,7 @@ dev.off()
 }
 
 ### Panels
-pdf(file=paste("outputUM/ECL_locations_CORDEX_NCEPvWRF_panel_proj100_d01_v3.pdf",sep=""),width=17,height=5,pointsize=14)
+pdf(file=paste("outputUM/ECL_locations_CORDEX_NCEPvWRF_panel_proj100_d01_v3a.pdf",sep=""),width=17,height=5,pointsize=14)
 layout(cbind(1,2,3),c(1,1,0.2))
 par(mar=c(3,3,3,2))
 for(i in c(1,3))
@@ -173,7 +173,7 @@ map(add=T,lwd=2)
 ColorBar(bb2,cm2)
 dev.off()
 
-pdf(file=paste("outputUM/ECL_locations_CORDEX_CMIPvWRF_panel_proj100_d01_v3.pdf",sep=""),width=17,height=5,pointsize=14)
+pdf(file=paste("outputUM/ECL_locations_CORDEX_CMIPvWRF_panel_proj100_d01_v3a.pdf",sep=""),width=17,height=5,pointsize=14)
 layout(cbind(1,2,3),c(1,1,0.2))
 par(mar=c(3,3,3,2))
 for(i in c(2,4))

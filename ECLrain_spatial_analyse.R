@@ -133,7 +133,7 @@ mask<-t(Useful$mask)
 mask[is.na(mask)]=0
 ColorBar <- function(brks,cols,vert=T,subsampleg=1,breaklab=brks)
 {
-  par(mar = c(3, 1, 3, 3), mgp = c(1, 1, 0), las = 1, cex = 1)
+  par(mar = c(3, 1, 3, 4), mgp = c(1, 1, 0), las = 1, cex = 1)
   image(1, c(1:length(cols)), t(c(1:length(cols))), axes = FALSE, col = cols, 
         xlab = '', ylab = '')
   box()
@@ -209,9 +209,9 @@ dev.off()
 source('~/Documents/R/color.palette.R')
 pal <- color.palette(c("white","skyblue1","blue","purple4"),c(10,20,10))
 
-pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Totalrain_d02_9009_panel_v3.pdf",sep=""),width=10,height=4,pointsize=12)
+pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Totalrain_d02_9009_panel_v3a.pdf",sep=""),width=10,height=4,pointsize=12)
 layout(cbind(1,2,3,4),width=c(1,1,1,0.32))
-names=c("AWAP","NCEP-WRF","CMIP-WRF","NCEP-WRF","CMIP-WRF")
+names=c("a) AWAP","NCEP-WRF","CMIP-WRF","b) NCEP-WRF","c) NARCliM")
 for(i in c(1,4,5))
 {
   par(mar=c(2,3,3,0))
@@ -276,9 +276,10 @@ dev.off()
 
 
 pal <- color.palette(c("white","skyblue1","blue","purple4"),c(10,20,10))
+pal2 <- color.palette(c("red","yellow","white","cyan","blue"), c(20,20,20,20))
 names1=c("total","5mm","25mm","50mm")
 
-for(j in 1:4)
+for(j in 1:1)
 {
 pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Ratio_9009_",names1[j],"_panel_v3.pdf",sep=""),width=10,height=4,pointsize=12)
 layout(cbind(1,2,3,4),width=c(1,1,1,0.3))
@@ -293,6 +294,32 @@ for(i in c(2,4,5))
 }
 ColorBar(seq(0,0.55,0.05),pal(11),T,2,c("0%","5%","10%","15%","20%","25%","30%","35%","40%","45%","50%","55%")) 
 dev.off()
+}
+
+names2=c("MLDB","a) NCEP","ERAI","b) NCEP-WRF","c) NARCliM")
+for(j in 1)
+{
+  pdf(file=paste("/srv/ccrc/data34/z3478332/CMIP-WRF-ECLs/Figures/Ratio_9009_",names1[j],"_panel_v3_change.pdf",sep=""),width=11,height=4,pointsize=12)
+  layout(cbind(1,4,2,3,5),width=c(1,0.4,1,1,0.4))
+  par(mar=c(2,3,3,1))
+  tmp=t(ratio_9009[,,2,j]*Useful$mask)
+  tmp[tmp>0.53]=0.525
+  image(Useful$x[1,],Useful$y[1,],tmp,breaks=seq(0,0.55,0.05),col=pal(11),main="a) NCEP",frame.plot=F,
+          xlim=c(145,155),ylim=c(-39,-24),xlab="",ylab="",cex.axis=1.5)
+  contour(Useful$x,Useful$y,maskE,add=T,drawlabels=F)
+  for(i in c(4,5))
+  {
+    par(mar=c(2,3,3,1))
+    tmp=t((ratio_9009[,,i,j]-ratio_9009[,,2,j])*Useful$mask)
+    image(Useful$x[1,],Useful$y[1,],tmp,breaks=seq(-0.2,0.2,0.05),col=pal2(8),main=names2[i],frame.plot=F,
+          xlim=c(145,155),ylim=c(-39,-24),xlab="",ylab="",cex.axis=1.5)
+    contour(Useful$x,Useful$y,maskE,add=T,drawlabels=F)
+  }
+  par(mar=c(3,1,3,4))
+  ColorBar(seq(0,0.55,0.05),pal(11),T,2,c("0%","5%","10%","15%","20%","25%","30%","35%","40%","45%","50%","55%")) 
+  par(mar=c(3,1,3,4))
+  ColorBar(seq(-0.2,0.2,0.05),pal2(8),T,2,c("-20%","-15%","-10%","-5%","0","+5%","+10%","+15%","+20%"))
+  dev.off()
 }
 
 names2=dimnames(ratio)[[3]]
